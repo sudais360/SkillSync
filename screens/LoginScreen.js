@@ -12,14 +12,18 @@ const LoginScreen = ({ route, navigation }) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password, role }),
+      body: JSON.stringify({ email, password, role }), // Make sure 'role' is correctly passed
     })
     .then(response => response.json())
     .then(data => {
       if (data.message === 'Invalid email or password') {
         alert(data.message);
       } else {
-        navigation.navigate('MainTabs');
+        if (role === 'employer') {
+          navigation.navigate('EmployerStack'); // Navigate to employer dashboard
+        } else {
+          navigation.navigate('EmployeeStack'); // Navigate to employee dashboard
+        }
       }
     })
     .catch(error => {
@@ -27,6 +31,7 @@ const LoginScreen = ({ route, navigation }) => {
       alert('Network request failed');
     });
   };
+  
 
   const handleSignUp = () => {
     navigation.navigate('Signup', { role });

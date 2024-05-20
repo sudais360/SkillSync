@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const CandidatesScreen = () => {
+const EmployerCandidatesScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Candidates</Text>
@@ -22,4 +22,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CandidatesScreen;
+export default EmployerCandidatesScreen;

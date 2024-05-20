@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const MeetingsScreen = () => {
+const AppliedJobsScreen = () => {
   return (
     <View style={styles.container}>
-      <Text>Meetings Screen</Text>
+      <Text>Applied Jobs/Positions</Text>
+      {/* Add your applied jobs content here */}
     </View>
   );
 };
@@ -17,4 +18,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MeetingsScreen;
+export default AppliedJobsScreen;
