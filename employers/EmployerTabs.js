@@ -14,16 +14,6 @@ import JobDetailsScreen from '../employers/JobDetailsScreen';
 
 const Tab = createBottomTabNavigator();
 
-const Stack = createNativeStackNavigator();
-
-const DashboardStack = () => {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen name="EmployerDashboard" component={EmployerDashboardScreen} />
-      <Stack.Screen name="JobDetails" component={JobDetailsScreen} />
-    </Stack.Navigator>
-  );
-};
 
 
 const EmployerTabs = () => {

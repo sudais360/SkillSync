@@ -19,8 +19,7 @@ const App = () => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="EmployerStack" component={EmployerStack} options={{ headerShown: false }} />
-        <Stack.Screen name="EmployeeStack" component={EmployeeStack}  options={{ headerShown: false }}/>
-        
+        <Stack.Screen name="EmployeeStack" component={EmployeeStack} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

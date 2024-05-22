@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, Button, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import ModalDropdown from 'react-native-modal-dropdown';
+import { MaterialIcons } from '@expo/vector-icons';
+import axios from 'axios';
 
 const EmployerJobPostingScreen = ({ navigation }) => {
   const [position, setPosition] = useState('');
@@ -10,41 +12,47 @@ const EmployerJobPostingScreen = ({ navigation }) => {
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [savedJobs, setSavedJobs] = useState([]);
 
-  const saveJob = () => {
-    const jobDetails = {
-      position,
-      salary,
-      scope,
-      expectations,
-      skills: selectedSkills,
-      timestamp: new Date().toISOString(),
-    };
-    setSavedJobs([...savedJobs, jobDetails]);
-    // Code to save job details to the database
-    // You can send a request to your backend API here
+  const scrollViewRef = useRef();
+
+  const handlePostJob = async () => {
+    try {
+      const jobDetails = {
+        // employerId,
+        position,
+        salary,
+        scope,
+        expectations,
+        skills: selectedSkills,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Make a POST request to your backend API to save the job details
+      const response = await axios.post('http://192.168.1.17:5000/jobpostings', jobDetails);
+
+      console.log('Job posted successfully:', response.data);
+
+      // Navigate to the employer dashboard after posting the job
+      navigation.navigate('EmployerDashboard', { recentlyAddedJob: jobDetails });
+    } catch (error) {
+      console.error('Error posting job:', error);
+      // Handle error appropriately, such as showing an error message to the user
+    }
   };
 
   const handleSelectSkill = (index, value) => {
     if (!selectedSkills.includes(value)) {
       setSelectedSkills([...selectedSkills, value]);
+      // Scroll to top when a skill is selected
+      scrollViewRef.current.scrollTo({ y: 0, animated: true });
     }
   };
 
-  const handlePostJob = () => {
-    const jobDetails = {
-      position,
-      salary,
-      scope,
-      expectations,
-      skills: selectedSkills,
-      timestamp: new Date().toISOString(),
-    };
-    console.log(jobDetails); // Log job details before posting
-    navigation.navigate('EmployerDashboard', { recentlyAddedJob: jobDetails });
+  const handleRemoveSkill = (skill) => {
+    setSelectedSkills(selectedSkills.filter((s) => s !== skill));
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} ref={scrollViewRef}>
       <TextInput
         style={styles.input}
         value={position}
@@ -75,7 +83,7 @@ const EmployerJobPostingScreen = ({ navigation }) => {
         <Text style={styles.skillLabel}>Skills:</Text>
         <ModalDropdown
           style={styles.skillPicker}
-          options={['Python', 'SQL', 'Data Visualization']}
+          options={['Python', 'SQL', 'Data Visualization', 'R', 'Microsoft', 'Data Cleaning']}
           defaultValue="Select skills"
           onSelect={handleSelectSkill}
         />
@@ -84,11 +92,12 @@ const EmployerJobPostingScreen = ({ navigation }) => {
         {selectedSkills.map((skill, index) => (
           <View key={index} style={styles.selectedSkillItem}>
             <Text>{skill}</Text>
-            <Button title="Remove" onPress={() => setSelectedSkills(selectedSkills.filter((s) => s !== skill))} />
+            <TouchableOpacity onPress={() => handleRemoveSkill(skill)}>
+              <MaterialIcons name="close" size={16} color="#FF5733" />
+            </TouchableOpacity>
           </View>
         ))}
       </View>
-      <Button title="Save Job" onPress={saveJob} />
       <Button title="Post Job" onPress={handlePostJob} />
       {/* Saved jobs */}
     </ScrollView>
@@ -128,6 +137,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   selectedSkillItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f0f0f0',
     padding: 5,
     borderRadius: 5,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
+
 const EmployerDashboardScreen = ({ navigation, route }) => {
   // Get recently added job details from navigation params
   const recentlyAddedJob = route.params?.recentlyAddedJob;

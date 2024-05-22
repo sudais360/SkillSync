@@ -1,19 +1,17 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-// Importing Tab Navigator
-import EmployerTabs from '../employers/EmployerTabs';
+import EmployerDashboardScreen from '../employers/EmployerDashboardScreen';
 import JobDetailsScreen from '../employers/JobDetailsScreen';
 
 const Stack = createNativeStackNavigator();
 
-const EmployerStack = () => {
+function JobDetailsNavigator() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="EmployerTabs" component={EmployerTabs} options={{ headerShown: false }} />
+    <Stack.Navigator initialRouteName="EmployerDashboard">
+      <Stack.Screen name="EmployerDashboard" component={EmployerDashboardScreen} />
       <Stack.Screen name="JobDetails" component={JobDetailsScreen} />
     </Stack.Navigator>
   );
-};
+}
 
-export default EmployerStack;
+export default JobDetailsNavigator;
