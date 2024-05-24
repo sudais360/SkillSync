@@ -1,23 +1,22 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import ModalDropdown from 'react-native-modal-dropdown';
-import { MaterialIcons } from '@expo/vector-icons';
+import { View, Text, TextInput, Button, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import axios from 'axios';
 
-const EmployerJobPostingScreen = ({ navigation }) => {
+const EmployerJobPostingScreen = ({ route, navigation }) => {
+  const { employerId } = route.params; // Receive employerId from route params
   const [position, setPosition] = useState('');
   const [salary, setSalary] = useState('');
   const [scope, setScope] = useState('');
   const [expectations, setExpectations] = useState('');
   const [selectedSkills, setSelectedSkills] = useState([]);
-  const [savedJobs, setSavedJobs] = useState([]);
+  const [skills] = useState(['Python', 'SQL', 'Data Visualization', 'R', 'Microsoft', 'Data Cleaning', 'Java', 'JavaScript', 'C#', 'C++']);
 
   const scrollViewRef = useRef();
 
   const handlePostJob = async () => {
     try {
       const jobDetails = {
-        // employerId,
+        employer_id: employerId,
         position,
         salary,
         scope,
@@ -25,6 +24,14 @@ const EmployerJobPostingScreen = ({ navigation }) => {
         skills: selectedSkills,
         timestamp: new Date().toISOString(),
       };
+
+      // Check if any required field is empty
+      for (const key in jobDetails) {
+        if (!jobDetails[key] || (Array.isArray(jobDetails[key]) && jobDetails[key].length === 0)) {
+          console.error('Missing required fields.');
+          return;
+        }
+      }
 
       // Make a POST request to your backend API to save the job details
       const response = await axios.post('http://192.168.1.17:5000/jobpostings', jobDetails);
@@ -39,20 +46,26 @@ const EmployerJobPostingScreen = ({ navigation }) => {
     }
   };
 
-  const handleSelectSkill = (index, value) => {
-    if (!selectedSkills.includes(value)) {
-      setSelectedSkills([...selectedSkills, value]);
-      // Scroll to top when a skill is selected
-      scrollViewRef.current.scrollTo({ y: 0, animated: true });
+  const toggleSkillSelection = (skill) => {
+    if (selectedSkills.includes(skill)) {
+      setSelectedSkills(selectedSkills.filter(s => s !== skill));
+    } else {
+      setSelectedSkills([...selectedSkills, skill]);
     }
   };
 
-  const handleRemoveSkill = (skill) => {
-    setSelectedSkills(selectedSkills.filter((s) => s !== skill));
-  };
+  const renderSkillItem = ({ item }) => (
+    <TouchableOpacity style={styles.skillItem} onPress={() => toggleSkillSelection(item)}>
+      <View style={styles.checkbox}>
+        {selectedSkills.includes(item) && <View style={styles.checkboxInner} />}
+      </View>
+      <Text>{item}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.container} ref={scrollViewRef}>
+      <Text>Employer ID: {employerId}</Text>
       <TextInput
         style={styles.input}
         value={position}
@@ -79,27 +92,14 @@ const EmployerJobPostingScreen = ({ navigation }) => {
         placeholder="Expectations/Good to Have"
         multiline
       />
-      <View style={styles.skillContainer}>
-        <Text style={styles.skillLabel}>Skills:</Text>
-        <ModalDropdown
-          style={styles.skillPicker}
-          options={['Python', 'SQL', 'Data Visualization', 'R', 'Microsoft', 'Data Cleaning']}
-          defaultValue="Select skills"
-          onSelect={handleSelectSkill}
-        />
-      </View>
-      <View style={styles.selectedSkillsContainer}>
-        {selectedSkills.map((skill, index) => (
-          <View key={index} style={styles.selectedSkillItem}>
-            <Text>{skill}</Text>
-            <TouchableOpacity onPress={() => handleRemoveSkill(skill)}>
-              <MaterialIcons name="close" size={16} color="#FF5733" />
-            </TouchableOpacity>
-          </View>
-        ))}
-      </View>
+      <Text style={styles.skillLabel}>Skills:</Text>
+      <FlatList
+        data={skills}
+        keyExtractor={(item) => item}
+        renderItem={renderSkillItem}
+        scrollEnabled={false}
+      />
       <Button title="Post Job" onPress={handlePostJob} />
-      {/* Saved jobs */}
     </ScrollView>
   );
 };
@@ -116,34 +116,29 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
-  skillContainer: {
+  skillLabel: {
+    marginVertical: 10,
+    fontWeight: 'bold',
+  },
+  skillItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
   },
-  skillLabel: {
-    marginRight: 10,
-  },
-  skillPicker: {
-    flex: 1,
-    padding: 10,
+  checkbox: {
+    width: 24,
+    height: 24,
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 5,
-  },
-  selectedSkillsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 10,
-  },
-  selectedSkillItem: {
-    flexDirection: 'row',
+    borderRadius: 4,
+    marginRight: 10,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    padding: 5,
-    borderRadius: 5,
-    marginRight: 5,
-    marginBottom: 5,
+  },
+  checkboxInner: {
+    width: 14,
+    height: 14,
+    backgroundColor: '#000',
   },
 });
 

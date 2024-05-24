@@ -7,10 +7,12 @@ import JobDetailsScreen from '../employers/JobDetailsScreen';
 
 const Stack = createNativeStackNavigator();
 
-const EmployerStack = () => {
+const EmployerStack = ({ route }) => {
+  const { employerId } = route.params;
+  
   return (
     <Stack.Navigator>
-      <Stack.Screen name="EmployerTabs" component={EmployerTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="EmployerTabs" component={EmployerTabs} initialParams={{ employerId }} options={{ headerShown: false }} />
       <Stack.Screen name="JobDetails" component={JobDetailsScreen} />
     </Stack.Navigator>
   );

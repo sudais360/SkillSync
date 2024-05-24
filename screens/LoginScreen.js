@@ -103,9 +103,10 @@ const LoginScreen = ({ route, navigation }) => {
         alert(data.message);
       } else {
         if (role === 'employer') {
-          navigation.navigate('EmployerStack', { screen: 'EmployerJobPostingScreen', params: { employerId: data.user_id }});
+          console.log("Login successful, employerId:", data.user_id); // Add logging
+          navigation.navigate('EmployerStack', { employerId: data.user_id });
         } else {
-          navigation.navigate('EmployeeStack'); // Navigate to employee dashboard
+          navigation.navigate('EmployeeStack', { screen: 'EmployeeDashboard', params: { employeeId: data.user_id }});
         }
       }
     })
@@ -115,8 +116,6 @@ const LoginScreen = ({ route, navigation }) => {
     });
   };
   
-  
-
   const handleSignUp = () => {
     navigation.navigate('Signup', { role });
   };
@@ -163,3 +162,4 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+

@@ -1,21 +1,42 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Button } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Button, Alert } from 'react-native';
+import axios from 'axios';
 
-const JobDetailsScreen = ({ route }) => {
+const JobDetailsScreen = ({ route, navigation }) => {
   // Retrieve job details from navigation params
   const { jobDetails } = route.params;
-  
+
   // State variables for editable job details
-  const [position, setPosition] = useState(jobDetails.position);
-  const [salary, setSalary] = useState(jobDetails.salary);
-  const [scope, setScope] = useState(jobDetails.scope);
-  const [expectations, setExpectations] = useState(jobDetails.expectations);
+  const [position, setPosition] = useState(jobDetails.Title);
+  const [salary, setSalary] = useState(jobDetails.Salary);
+  const [scope, setScope] = useState(jobDetails.Scope);
+  const [expectations, setExpectations] = useState(jobDetails.Description);
 
   // Function to save edited job details
-  const saveJobDetails = () => {
-    // Implement code to save edited job details
-    // For demonstration purposes, just log the updated details
-    console.log("Updated Job Details:", { position, salary, scope, expectations });
+  const saveJobDetails = async () => {
+    try {
+      const updatedJobDetails = {
+        position,
+        salary,
+        scope,
+        expectations,
+        skills: jobDetails.Skills,  // assuming skills are not being edited here
+      };
+
+      // Make a PUT request to update the job details
+      const response = await axios.put(`http://192.168.1.17:5000/jobpostings/${jobDetails.JobID}`, updatedJobDetails);
+
+      console.log("Updated Job Details:", response.data);
+      
+      // Show success alert
+      Alert.alert("Success", "Job details updated successfully!");
+
+      // Navigate back to the dashboard and refresh the data
+      navigation.navigate('EmployerDashboard', { recentlyAddedJob: updatedJobDetails });
+    } catch (error) {
+      console.error('Error updating job details:', error);
+      Alert.alert("Error", "Failed to update job details. Please try again.");
+    }
   };
 
   return (

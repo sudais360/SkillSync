@@ -1,8 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
 
 // Importing Screens
 import EmployerDashboardScreen from '../employers/EmployerDashboardScreen';
@@ -10,13 +8,13 @@ import EmployerJobPostingScreen from '../employers/EmployerJobPostingScreen';
 import EmployerCandidatesScreen from '../employers/EmployerCandidatesScreen';
 import EmployerMeetingsScreen from '../employers/EmployerMeetingsScreen';
 import EmployerSettingsScreen from '../employers/EmployerSettingsScreen';
-import JobDetailsScreen from '../employers/JobDetailsScreen';
 
 const Tab = createBottomTabNavigator();
 
+const EmployerTabs = ({ route }) => {
+  const { employerId } = route.params;
+  console.log("EmployerTabs - employerId:", employerId); // Add logging
 
-
-const EmployerTabs = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -41,12 +39,11 @@ const EmployerTabs = () => {
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      <Tab.Screen name="EmployerDashboard" component={EmployerDashboardScreen} />
-      <Tab.Screen name="EmployerJobPosting" component={EmployerJobPostingScreen} />
-      <Tab.Screen name="EmployerCandidates" component={EmployerCandidatesScreen} />
-      <Tab.Screen name="EmployerMeetings" component={EmployerMeetingsScreen} />
-      <Tab.Screen name="EmployerSettings" component={EmployerSettingsScreen} />
-      
+      <Tab.Screen name="EmployerDashboard" component={EmployerDashboardScreen} initialParams={{ employerId }} />
+      <Tab.Screen name="EmployerJobPosting" component={EmployerJobPostingScreen} initialParams={{ employerId }} />
+      <Tab.Screen name="EmployerCandidates" component={EmployerCandidatesScreen} initialParams={{ employerId }} />
+      <Tab.Screen name="EmployerMeetings" component={EmployerMeetingsScreen} initialParams={{ employerId }} />
+      <Tab.Screen name="EmployerSettings" component={EmployerSettingsScreen} initialParams={{ employerId }} />
     </Tab.Navigator>
   );
 };

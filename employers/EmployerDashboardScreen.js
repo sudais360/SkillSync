@@ -1,24 +1,43 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import axios from 'axios';
+import { useFocusEffect } from '@react-navigation/native';
 
 const EmployerDashboardScreen = ({ navigation, route }) => {
-  // Get recently added job details from navigation params
+  const [jobPostings, setJobPostings] = useState([]);
   const recentlyAddedJob = route.params?.recentlyAddedJob;
+  const { employerId } = route.params; // Receive employerId from route params
 
-  // Function to navigate to JobDetailsScreen
-  const handlePressJobCard = () => {
-    navigation.navigate('JobDetails', { jobDetails: recentlyAddedJob });
+  // Function to fetch job postings from the backend
+  const fetchJobPostings = async () => {
+    try {
+      const response = await axios.get(`http://192.168.1.17:5000/jobpostings?employer_id=${employerId}`);
+      setJobPostings(response.data);
+    } catch (error) {
+      console.error('Error fetching job postings:', error);
+    }
+  };
+
+  // Refresh job postings when the screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchJobPostings();
+    }, [route])
+  );
+
+  const handlePressJobCard = (jobDetails) => {
+    navigation.navigate('JobDetails', { jobDetails });
   };
 
   return (
     <View style={styles.container}>
-      <Text>Dashboard Screen</Text>
+      <Text style={styles.title}>Dashboard Screen</Text>
+      <Text style={styles.text}>Employer ID: {employerId}</Text>
+
       {/* Display recently added job details */}
       {recentlyAddedJob && (
-        <TouchableOpacity style={styles.recentJobContainer} onPress={handlePressJobCard}>
+        <TouchableOpacity style={styles.recentJobContainer} onPress={() => handlePressJobCard(recentlyAddedJob)}>
           <Text style={styles.recentJobTitle}>Recently Added:</Text>
-          {/* Render each recently added job as a card */}
           <View style={styles.jobCard}>
             <Text>Title: {recentlyAddedJob.position}</Text>
             <Text>Salary: {recentlyAddedJob.salary}</Text>
@@ -26,6 +45,18 @@ const EmployerDashboardScreen = ({ navigation, route }) => {
           </View>
         </TouchableOpacity>
       )}
+
+      {/* Display all job postings */}
+      <FlatList
+        data={jobPostings}
+        keyExtractor={(item) => item.JobID.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.jobCard} onPress={() => handlePressJobCard(item)}>
+            <Text>Title: {item.Title}</Text>
+            <Text>Salary: {item.Salary}</Text>
+          </TouchableOpacity>
+        )}
+      />
     </View>
   );
 };
@@ -33,15 +64,21 @@ const EmployerDashboardScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
   },
   recentJobContainer: {
-    marginTop: 20,
+    marginBottom: 20,
     padding: 10,
     borderWidth: 1,
     borderColor: 'lightgray',
     borderRadius: 5,
+    backgroundColor: '#fff',
   },
   recentJobTitle: {
     fontWeight: 'bold',
@@ -59,6 +96,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  text: {
+    fontSize: 18,
+    marginBottom: 10,
   },
 });
 
