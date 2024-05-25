@@ -2,6 +2,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from database import Database
 
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from datetime import datetime, timedelta
+import uuid
 app = Flask(__name__)
 CORS(app)
 
@@ -10,6 +13,13 @@ db = Database(server="skillsync12345.database.windows.net",
               username="skillsync",
               password="Sudais22!")
 db.connect()
+
+# Initialize the BlobServiceClient with your Azure connection string
+connection_string = "DefaultEndpointsProtocol=https;AccountName=skillsync;AccountKey=ojDU6hUV5lnMwFeomFd15yCQLTdfAy4mNYjAHdnFSLkXsAxdWICeq74FLhabq5byM5VZ6sHntbMm+AStDr/d0g==;EndpointSuffix=core.windows.net"
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+container_name = "resumes"
+
+################################################# SIGNU  P#################################################
 
 @app.route('/signup', methods=['POST'])
 def signup():
@@ -60,6 +70,9 @@ def signup():
     except Exception as e:
         print(f"Error in signup: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+    
+
+    ################################################# LOGIN  P#################################################
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -103,6 +116,11 @@ def login():
     except Exception as e:
         print(f"Error in login: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+    
+
+################################################# EMPLOYER  #################################################
+
+################################### Jobposting  #################
 
 @app.route('/jobpostings', methods=['POST'])
 def create_job_posting():
@@ -195,6 +213,98 @@ def get_job_postings():
     except Exception as e:
         print(f"Error fetching job postings: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+    
+
+
+
+################################### EMPLOYEE  ###############################
+
+@app.route('/jobpostings', methods=['GET'])
+def get_job_postings_employees():
+    try:
+        cursor = db.conn.cursor()
+        cursor.execute("SELECT JobID, EmployerID, Title, Description, Skills, Scope, Salary FROM JobPostings")
+        job_postings = cursor.fetchall()
+        job_postings_list = [
+            {
+                'JobID': job[0],
+                'EmployerID': job[1],
+                'Title': job[2],
+                'Description': job[3],
+                'Skills': job[4].split(',') if job[4] else [],
+                'Scope': job[5],
+                'Salary': job[6]
+            } for job in job_postings
+        ]
+        cursor.close()
+        return jsonify(job_postings_list), 200
+    except Exception as e:
+        print(f"Error fetching job postings: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+
+
+################################## RESUME ######################
+
+def generate_sas_token(blob_name):
+    sas_token = generate_blob_sas(
+        account_name="skillsync",
+        container_name=container_name,
+        blob_name=blob_name,
+        account_key="ojDU6hUV5lnMwFeomFd15yCQLTdfAy4mNYjAHdnFSLkXsAxdWICeq74FLhabq5byM5VZ6sHntbMm+AStDr/d0g==",
+        permission=BlobSasPermissions(read=True),
+        expiry=datetime.utcnow() + timedelta(hours=1)
+    )
+    return sas_token
+
+@app.route('/upload_resume', methods=['POST'])
+def upload_resume():
+    try:
+        file = request.files['resume']
+        user_id = request.form['user_id']
+
+        if file:
+            print(f"Received file: {file.filename}")
+            # Generate a unique filename
+            blob_name = str(uuid.uuid4()) + "-" + file.filename
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+            blob_client.upload_blob(file)
+            print(f"Uploaded file to blob storage: {blob_client.url}")
+
+            # Store the blob name in the database
+            cursor = db.conn.cursor()
+            cursor.execute("UPDATE employees SET ResumeURL = ? WHERE EmployeeID = ?", (blob_name, user_id))
+            db.conn.commit()
+            cursor.close()
+
+            return jsonify({"message": "Resume uploaded successfully", "blob_name": blob_name}), 200
+        else:
+            print("No file provided")
+            return jsonify({"message": "No file provided"}), 400
+    except Exception as e:
+        print(f"Error uploading resume: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+@app.route('/get_resume_url', methods=['GET'])
+def get_resume_url():
+    try:
+        user_id = request.args.get('user_id')
+        cursor = db.conn.cursor()
+        cursor.execute("SELECT ResumeURL FROM employees WHERE EmployeeID = ?", (user_id,))
+        result = cursor.fetchone()
+        cursor.close()
+
+        if result and result[0]:
+            blob_name = result[0]
+            sas_token = generate_sas_token(blob_name)
+            resume_url = f"https://skillsync.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
+            return jsonify({"resume_url": resume_url}), 200
+        else:
+            return jsonify({"resume_url": None}), 200
+    except Exception as e:
+        print(f"Error fetching resume URL: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+    
 
 
 if __name__ == '__main__':

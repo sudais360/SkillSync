@@ -10,7 +10,9 @@ import EmployeeSettingsScreen from '../employees/EmployeeSettingsScreen';
 
 const Tab = createBottomTabNavigator();
 
-const EmployeeTabs = () => {
+const EmployeeTabs = ({ route }) => {
+  const { employeeId } = route.params;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -33,10 +35,10 @@ const EmployeeTabs = () => {
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      <Tab.Screen name="EmployeeDashboard" component={EmployeeDashboardScreen} />
-      <Tab.Screen name="EmployeeAppliedJobs" component={EmployeeAppliedJobsScreen} />
-      <Tab.Screen name="EmployeeSkillAssessment" component={EmployeeSkillAssessmentScreen} />
-      <Tab.Screen name="EmployeeSettings" component={EmployeeSettingsScreen} />
+      <Tab.Screen name="EmployeeDashboard" component={EmployeeDashboardScreen} initialParams={{ employeeId }} />
+      <Tab.Screen name="EmployeeAppliedJobs" component={EmployeeAppliedJobsScreen} initialParams={{ employeeId }} />
+      <Tab.Screen name="EmployeeSkillAssessment" component={EmployeeSkillAssessmentScreen} initialParams={{ employeeId }} />
+      <Tab.Screen name="EmployeeSettings" component={EmployeeSettingsScreen} initialParams={{ employeeId }} />
     </Tab.Navigator>
   );
 };

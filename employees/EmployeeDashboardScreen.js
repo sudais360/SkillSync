@@ -1,11 +1,39 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import axios from 'axios';
 
-const EmployeeDashboardScreen = () => {
+const EmployeeDashboardScreen = ({ navigation }) => {
+  const [jobPostings, setJobPostings] = useState([]);
+
+  useEffect(() => {
+    const fetchJobPostings = async () => {
+      try {
+        const response = await axios.get('http://192.168.1.17:5000/jobpostings');
+        setJobPostings(response.data);
+      } catch (error) {
+        console.error('Error fetching job postings:', error);
+      }
+    };
+    fetchJobPostings();
+  }, []);
+
+  const handlePressJobCard = (jobDetails) => {
+    navigation.navigate('EmployeeJobDetails', { jobDetails });
+  };
+
   return (
     <View style={styles.container}>
-      <Text>Employee Dashboard</Text>
-      {/* Add your dashboard content here */}
+      <FlatList
+        data={jobPostings}
+        keyExtractor={(item) => item.JobID.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.jobCard} onPress={() => handlePressJobCard(item)}>
+            <Text>Title: {item.Title}</Text>
+            <Text>Salary: {item.Salary}</Text>
+            <Text>Description: {item.Description}</Text>
+          </TouchableOpacity>
+        )}
+      />
     </View>
   );
 };
@@ -13,8 +41,21 @@ const EmployeeDashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  jobCard: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'lightgray',
+    marginBottom: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
 });
 

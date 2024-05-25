@@ -106,7 +106,8 @@ const LoginScreen = ({ route, navigation }) => {
           console.log("Login successful, employerId:", data.user_id); // Add logging
           navigation.navigate('EmployerStack', { employerId: data.user_id });
         } else {
-          navigation.navigate('EmployeeStack', { screen: 'EmployeeDashboard', params: { employeeId: data.user_id }});
+          console.log("Login successful, employeeId:", data.user_id); // Add logging
+          navigation.navigate('EmployeeStack', { employeeId: data.user_id });
         }
       }
     })
