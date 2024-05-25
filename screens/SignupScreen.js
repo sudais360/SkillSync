@@ -1,6 +1,5 @@
-// In SignupScreen.js
-import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet,Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, TextInput, Button, StyleSheet, Text } from 'react-native';
 
 const SignupScreen = ({ navigation, route }) => {
   const { role } = route.params; // Get the role parameter from the navigation route
@@ -8,16 +7,15 @@ const SignupScreen = ({ navigation, route }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSignup = () => {
-    // Make API call to sign up the user
-    const role = route.params?.role;
+  useEffect(() => {
     if (!role) {
       console.error('Role parameter is missing.');
       // Handle the error, for example, by navigating to a default screen
-      return;
+      navigation.navigate('RoleSelection'); // Adjust the route name as per your setup
     }
+  }, [role]);
 
-
+  const handleSignup = () => {
     // Include role in the signup data
     fetch('http://192.168.1.17:5000/signup', {
       method: 'POST',
@@ -31,22 +29,22 @@ const SignupScreen = ({ navigation, route }) => {
         role, // Include the role in the signup data
       }),
     })
-    .then(response => {
-      if (response.ok) {
-        navigation.navigate('Login');
-      } else {
-        throw new Error('Failed to sign up');
-      }
-    })
-    .catch(error => {
-      console.error('Error signing up:', error);
-    });
+      .then(response => response.json())
+      .then(data => {
+        if (data.message === "User created successfully") {
+          navigation.navigate('Login', { role });
+        } else {
+          throw new Error(data.message || 'Failed to sign up');
+        }
+      })
+      .catch(error => {
+        console.error('Error signing up:', error);
+      });
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.userTypeText}>Sign up as {role || 'Unknown'}</Text>
-
       <TextInput
         placeholder="Name"
         value={name}
@@ -86,6 +84,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
     paddingHorizontal: 10,
+  },
+  userTypeText: {
+    fontSize: 18,
+    marginBottom: 10,
   },
 });
 

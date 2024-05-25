@@ -5,6 +5,17 @@ from database import Database
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 from datetime import datetime, timedelta
 import uuid
+
+import PyPDF2
+import re
+import io
+import requests
+
+import spacy
+
+# Initialize spaCy NLP model
+nlp = spacy.load("en_core_web_sm")
+
 app = Flask(__name__)
 CORS(app)
 
@@ -304,8 +315,98 @@ def get_resume_url():
     except Exception as e:
         print(f"Error fetching resume URL: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
-    
 
+# @app.route('/extract_resume_data', methods=['POST'])
+# def extract_resume_data():
+#     try:
+#         data = request.json
+#         file_uri = data.get('uri')
+        
+#         if not file_uri:
+#             return jsonify({"message": "File URI not provided"}), 400
+        
+#         # Download the file from the given URI
+#         response = requests.get(file_uri)
+#         file_content = response.content
+
+#         # Extract text from PDF
+#         pdf_reader = PyPDF2.PdfFileReader(io.BytesIO(file_content))
+#         num_pages = pdf_reader.getNumPages()
+#         text = ''
+#         for i in range(num_pages):
+#             text += pdf_reader.getPage(i).extract_text()
+
+#         # Process the text with spaCy
+#         doc = nlp(text)
+
+#         # Extract entities using spaCy
+#         name = ''
+#         email = ''
+#         phone = ''
+#         address = ''
+#         current_job_title = ''
+#         skills = []
+#         experience = ''
+
+#         for ent in doc.ents:
+#             if ent.label_ == "PERSON":
+#                 name = ent.text
+#             elif ent.label_ == "ORG" and not current_job_title:
+#                 current_job_title = ent.text
+#             elif ent.label_ == "GPE" and not address:
+#                 address = ent.text
+#             elif ent.label_ == "EMAIL":
+#                 email = ent.text
+#             elif ent.label_ == "PHONE":
+#                 phone = ent.text
+
+#         # Extract skills and experience manually (since they are not standard entities)
+#         skills = re.findall(r'\bSkills: (.*?)\b', text, re.IGNORECASE)
+#         experience = re.findall(r'\bExperience: (.*?)\b', text, re.IGNORECASE)
+
+#         extracted_data = {
+#             "name": name,
+#             "email": email,
+#             "phone": phone,
+#             "address": address,
+#             "currentJobTitle": current_job_title,
+#             "skills": skills[0] if skills else '',
+#             "experience": experience[0] if experience else ''
+#         }
+        
+#         print(f"Extracted resume data: {extracted_data}")
+        
+#         return jsonify(extracted_data), 200
+#     except Exception as e:
+#         print(f"Error extracting resume data: {e}")
+#         return jsonify({"message": "Internal Server Error"}), 500
+
+@app.route('/update_employee_settings', methods=['POST'])
+def update_employee_settings():
+    try:
+        data = request.json
+        employee_id = data.get('employeeId')
+        name = data.get('name')
+        email = data.get('email')
+        phone = data.get('phone')
+        address = data.get('address')
+        current_job_title = data.get('currentJobTitle')
+        skills = data.get('skills')
+        experience = data.get('experience')
+
+        cursor = db.conn.cursor()
+        cursor.execute("""
+            UPDATE employees
+            SET Name = ?, Email = ?, Phone = ?, Address = ?, CurrentJobTitle = ?, Skills = ?, Experience = ?
+            WHERE EmployeeID = ?
+        """, (name, email, phone, address, current_job_title, skills, experience, employee_id))
+        db.conn.commit()
+        cursor.close()
+
+        return jsonify({"message": "Settings updated successfully"}), 200
+    except Exception as e:
+        print(f"Error updating settings: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
