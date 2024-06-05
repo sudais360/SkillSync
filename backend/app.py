@@ -144,7 +144,7 @@ def create_job_posting():
         
         employer_id = data.get('employer_id')  # Assuming you pass the employer's ID from the frontend
         title = data.get('position')  # Make sure the key names match those sent from the frontend
-        description = data.get('scope')  # Adjust the field names as needed
+        description = data.get('expectations')  # Adjust the field names as needed
         skills = data.get('skills')
         scope = data.get('scope')
         salary = data.get('salary')
@@ -155,7 +155,7 @@ def create_job_posting():
             return jsonify({"message": "Missing required fields"}), 400
 
         cursor = db.conn.cursor()
-        cursor.execute("INSERT INTO JobPostings (EmployerId, Title, Description, Skills, Scope, Salary) VALUES (?, ?, ?, ?, ?, ?)",
+        cursor.execute("INSERT INTO JobPostings (EmployerID, Title, Description, SkillsRequired, Scope, Salary) VALUES (?, ?, ?, ?, ?, ?)",
                        (employer_id, title, description, ','.join(skills), scope, salary))
         db.conn.commit()
         cursor.close()
@@ -165,6 +165,8 @@ def create_job_posting():
         print(f"Error creating job posting: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
+
+
 ################################### Update Jobposting  #################
 @app.route('/jobpostings/<int:job_id>', methods=['PUT'])
 def update_job_posting(job_id):
@@ -173,7 +175,7 @@ def update_job_posting(job_id):
         print(f"Received job update data for job ID {job_id}: {data}")
         
         title = data.get('position')
-        description = data.get('scope')
+        description = data.get('expectations')
         skills = data.get('skills')
         scope = data.get('scope')
         salary = data.get('salary')
@@ -186,7 +188,7 @@ def update_job_posting(job_id):
         cursor = db.conn.cursor()
         cursor.execute("""
             UPDATE JobPostings
-            SET Title = ?, Description = ?, Skills = ?, Scope = ?, Salary = ?
+            SET Title = ?, Description = ?, SkillsRequired = ?, Scope = ?, Salary = ?
             WHERE JobID = ?
         """, (title, description, ','.join(skills), scope, salary, job_id))
         db.conn.commit()
@@ -196,7 +198,6 @@ def update_job_posting(job_id):
     except Exception as e:
         print(f"Error updating job posting: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
-    
 
 ################################### Get Jobposting  #################
 
@@ -207,9 +208,9 @@ def get_job_postings():
         cursor = db.conn.cursor()
         
         if employer_id:
-            cursor.execute("SELECT JobID, EmployerID, Title, Description, Skills, Scope, Salary FROM JobPostings WHERE EmployerID = ?", (employer_id,))
+            cursor.execute("SELECT JobID, EmployerID, Title, Description, SkillsRequired, Scope, Salary FROM JobPostings WHERE EmployerID = ?", (employer_id,))
         else:
-            cursor.execute("SELECT JobID, EmployerID, Title, Description, Skills, Scope, Salary FROM JobPostings")
+            cursor.execute("SELECT JobID, EmployerID, Title, Description, SkillsRequired, Scope, Salary FROM JobPostings")
         
         job_postings = cursor.fetchall()
         
@@ -230,17 +231,19 @@ def get_job_postings():
     except Exception as e:
         print(f"Error fetching job postings: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
-    
-
 
 
 ################################### EMPLOYEE  ###############################
 ################################### get Job Postings  ###############################
-@app.route('/jobpostings', methods=['GET'])
+@app.route('/employee_jobpostings', methods=['GET'])
 def get_job_postings_employees():
     try:
         cursor = db.conn.cursor()
-        cursor.execute("SELECT JobID, EmployerID, Title, Description, Skills, Scope, Salary FROM JobPostings")
+        cursor.execute("""
+            SELECT jp.JobID, jp.EmployerID, jp.Title, jp.Description, jp.SkillsRequired, jp.Scope, jp.Salary, e.Name AS CompanyName
+            FROM JobPostings jp
+            JOIN employers e ON jp.EmployerID = e.EmployerID
+        """)
         job_postings = cursor.fetchall()
         job_postings_list = [
             {
@@ -250,16 +253,16 @@ def get_job_postings_employees():
                 'Description': job[3],
                 'Skills': job[4].split(',') if job[4] else [],
                 'Scope': job[5],
-                'Salary': job[6]
+                'Salary': job[6],
+                'CompanyName': job[7]
             } for job in job_postings
         ]
         cursor.close()
         return jsonify(job_postings_list), 200
+    
     except Exception as e:
         print(f"Error fetching job postings: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
-
-
 
 ################################## RESUME ######################
 
@@ -314,25 +317,27 @@ def generate_sas_token(blob_name):
     return sas_token
     
 ################################## Get RESUME ######################
-@app.route('/get_resume_url', methods=['GET'])
-def get_resume_url():
-    try:
-        user_id = request.args.get('user_id')
-        cursor = db.conn.cursor()
-        cursor.execute("SELECT ResumeURL FROM employees WHERE EmployeeID = ?", (user_id,))
-        result = cursor.fetchone()
-        cursor.close()
+# @app.route('/get_resume', methods=['GET'])
+# def get_resume():
+#     try:
+#         user_id = request.args.get('user_id')
+#         cursor = db.conn.cursor()
+#         cursor.execute("SELECT ResumePDF FROM employees WHERE EmployeeID = ?", (user_id,))
+#         result = cursor.fetchone()
+#         cursor.close()
 
-        if result and result[0]:
-            blob_name = result[0]
-            sas_token = generate_sas_token(blob_name)
-            resume_url = f"https://skillsync.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
-            return jsonify({"resume_url": resume_url}), 200
-        else:
-            return jsonify({"resume_url": None}), 200
-    except Exception as e:
-        print(f"Error fetching resume URL: {e}")
-        return jsonify({"message": "Internal Server Error"}), 500
+#         if result and result[0]:
+#             resume_pdf = result[0]
+#             response = make_response(resume_pdf)
+#             response.headers.set('Content-Type', 'application/pdf')
+#             response.headers.set('Content-Disposition', 'attachment', filename=f'resume_{user_id}.pdf')
+#             return response
+#         else:
+#             return jsonify({"message": "No resume found for user"}), 404
+#     except Exception as e:
+#         print(f"Error fetching resume: {e}")
+#         return jsonify({"message": "Internal Server Error"}), 500
+
 
     
 ################################## extract_resume_data ######################
@@ -430,7 +435,7 @@ def parse_text_with_ner(text):
 def update_employee_settings():
     try:
         data = request.json
-        employee_id = data.get('employeeId')
+        user_id = data.get('user_id')
         name = data.get('name')
         email = data.get('email')
         phone = data.get('phone')
@@ -444,14 +449,45 @@ def update_employee_settings():
             UPDATE employees
             SET Name = ?, Email = ?, Phone = ?, Address = ?, CurrentJobTitle = ?, Skills = ?, Experience = ?
             WHERE EmployeeID = ?
-        """, (name, email, phone, address, current_job_title, skills, experience, employee_id))
+        """, (name, email, phone, address, current_job_title, skills, experience, user_id))
         db.conn.commit()
         cursor.close()
 
-        return jsonify({"message": "Settings updated successfully"}), 200
+        return jsonify({"message": "Employee settings updated successfully"}), 200
     except Exception as e:
-        print(f"Error updating settings: {e}")
+        print(f"Error updating employee settings: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+
+################################## get_employee_data ######################
+@app.route('/get_employee_data', methods=['GET'])
+def get_employee_data():
+    try:
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({"message": "User ID not provided"}), 400
+
+        cursor = db.conn.cursor()
+        cursor.execute("SELECT Name, Email, Phone, Address, CurrentJobTitle, Skills, Experience FROM employees WHERE EmployeeID = ?", (user_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        
+        if result:
+            employee_data = {
+                "name": result[0],
+                "email": result[1],
+                "phone": result[2],
+                "address": result[3],
+                "currentJobTitle": result[4],
+                "skills": result[5],
+                "experience": result[6]
+            }
+            return jsonify(employee_data), 200
+        else:
+            return jsonify({"message": "Employee not found"}), 404
+    except Exception as e:
+        print(f"Error fetching employee data: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

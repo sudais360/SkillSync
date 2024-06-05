@@ -23,6 +23,7 @@ const EmployeeJobDetailsScreen = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Job Details</Text>
+      <Text>Company Name: {jobDetails.CompanyName}</Text>
       <Text>Title: {jobDetails.Title}</Text>
       <Text>Salary: {jobDetails.Salary}</Text>
       <Text>Scope: {jobDetails.Scope}</Text>

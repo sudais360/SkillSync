@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Linking, Button, ScrollView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Button, ScrollView } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import axios from 'axios';
 
 const EmployeeSettingsScreen = ({ route }) => {
   const { employeeId } = route.params;
   const [resume, setResume] = useState(null);
-  const [resumeURL, setResumeURL] = useState('');
-  const [extractedData, setExtractedData] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,18 +17,18 @@ const EmployeeSettingsScreen = ({ route }) => {
   });
 
   useEffect(() => {
-    const fetchResumeURL = async () => {
+    const fetchEmployeeData = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.17:5000/get_resume_url?user_id=${employeeId}`);
-        if (response.data.resume_url) {
-          setResumeURL(response.data.resume_url);
+        const response = await axios.get(`http://192.168.1.17:5000/get_employee_data?user_id=${employeeId}`);
+        if (response.data) {
+          setFormData(response.data);
         }
       } catch (error) {
-        console.error('Error fetching resume URL:', error);
+        console.error('Error fetching employee data:', error);
       }
     };
 
-    fetchResumeURL();
+    fetchEmployeeData();
   }, [employeeId]);
 
   const pickAndUploadDocument = async () => {
@@ -68,10 +66,6 @@ const EmployeeSettingsScreen = ({ route }) => {
       });
       console.log("Resume upload response:", response.data);
       alert('Resume uploaded successfully!');
-      const sas_response = await axios.get(`http://192.168.1.17:5000/get_resume_url?user_id=${employeeId}`);
-      if (sas_response.data.resume_url) {
-        setResumeURL(sas_response.data.resume_url);
-      }
     } catch (error) {
       console.error('Error uploading resume:', error);
       alert('Failed to upload resume. Please try again.');
@@ -79,21 +73,15 @@ const EmployeeSettingsScreen = ({ route }) => {
   };
 
   const extractResumeData = async () => {
-    if (!resumeURL) {
-      alert('Please upload a resume first.');
-      return;
-    }
-
-      try {
-        const response = await axios.post('http://192.168.1.17:5000/extract_resume_data', { user_id: employeeId });
-        if (response.data) {
-          setFormData(response.data);
-        }
-      } catch (error) {
-        console.error('Error extracting resume data:', error);
+    try {
+      const response = await axios.post('http://192.168.1.17:5000/extract_resume_data', { user_id: employeeId });
+      if (response.data) {
+        setFormData(response.data);
       }
-    };
-    
+    } catch (error) {
+      console.error('Error extracting resume data:', error);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData({
@@ -105,7 +93,7 @@ const EmployeeSettingsScreen = ({ route }) => {
   const saveSettings = async () => {
     try {
       await axios.post('http://192.168.1.17:5000/update_employee_settings', {
-        employeeId,
+        user_id: employeeId,
         ...formData,
       });
       alert('Settings saved successfully!');
@@ -122,22 +110,9 @@ const EmployeeSettingsScreen = ({ route }) => {
         <Text style={styles.buttonText}>Select and Upload Resume</Text>
       </TouchableOpacity>
       {resume && <Text>{resume.name}</Text>}
-      {resumeURL ? (
-        <TouchableOpacity onPress={() => Linking.openURL(resumeURL)} style={styles.linkButton}>
-          <Text style={styles.linkButtonText}>View Uploaded Resume</Text>
-        </TouchableOpacity>
-      ) : (
-        <Text>No resume uploaded</Text>
-      )}
       <TouchableOpacity onPress={extractResumeData} style={styles.button}>
         <Text style={styles.buttonText}>Extract Resume Data</Text>
       </TouchableOpacity>
-      {extractedData && (
-        <View style={styles.extractedDataContainer}>
-          <Text>Extracted Data:</Text>
-          <Text>{JSON.stringify(extractedData, null, 2)}</Text>
-        </View>
-      )}
       <TextInput
         style={styles.input}
         placeholder="Name"
@@ -206,29 +181,12 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
   },
-  linkButton: {
-    marginTop: 20,
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: 'lightblue',
-    alignItems: 'center',
-  },
-  linkButtonText: {
-    color: 'blue',
-    textDecorationLine: 'underline',
-  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
     marginBottom: 10,
-  },
-  extractedDataContainer: {
-    marginVertical: 20,
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
   },
 });
 

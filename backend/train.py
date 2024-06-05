@@ -1,7 +1,16 @@
 import spacy
 import random
 from spacy.training import Example
+from spacy.lookups import Lookups
 import os
+
+# Load the pre-trained spaCy model
+nlp = spacy.load('en_core_web_sm')
+
+# Ensure lookups data is available
+lookups = Lookups()
+lookups.add_table("lexeme_norm", {"hello": "hello", "world": "world"})
+nlp.vocab.lookups = lookups
 
 # Training data focused on Name, Phone, Email, and Address
 TRAIN_DATA = [
@@ -21,49 +30,58 @@ TRAIN_DATA = [
      {"entities": [(28, 36, "NAME"), (40, 60, "EMAIL"), (64, 78, "PHONE"), (91, 108, "ADDRESS")]}),
     ("Jane Smith, Email: jane.smith@example.com, Phone: +1-800-555-5555, Address: 500 Fifth Ave, New York, NY 10018", 
      {"entities": [(0, 10, "NAME"), (18, 38, "EMAIL"), (47, 63, "PHONE"), (74, 98, "ADDRESS")]}),
+    ("Ahmad Bin Ali", {"entities": [(0, 13, "NAME")]}),
+    ("Fatimah Binte Ahmad", {"entities": [(0, 18, "NAME")]}),
+    ("John Doe", {"entities": [(0, 8, "NAME")]}),
+    ("Jane SO Smith", {"entities": [(0, 12, "NAME")]}),
+    ("Mohamed", {"entities": [(0, 7, "NAME")]}),
+    ("Sudais", {"entities": [(0, 6, "NAME")]}),
+    ("James O'Connor, Address: 1234 University Ave, Palo Alto, CA", 
+     {"entities": [(0, 15, "NAME"), (26, 54, "ADDRESS")]}),
+    ("Name: Alice Johnson, Address: 5678 Market St, San Francisco, CA 94103", 
+     {"entities": [(6, 19, "NAME"), (29, 64, "ADDRESS")]}),
+    ("Dr. Emily Tran, Phone: 555-555-5555, Email: emily.tran@domain.com, Address: 9012 Birch St, Austin, TX 73301", 
+     {"entities": [(0, 13, "NAME"), (22, 34, "PHONE"), (42, 62, "EMAIL"), (72, 100, "ADDRESS")]}),
+    ("Contact info: Mark Spencer, 333-333-3333, mark.spencer@domain.com, 321 Pine Rd, Boston, MA 02110", 
+     {"entities": [(13, 25, "NAME"), (27, 39, "PHONE"), (41, 63, "EMAIL"), (65, 90, "ADDRESS")]}),
+    ("Reach out to Lisa Brown at lisa.brown@domain.com or (987) 654-3210. Her address is 876 Willow Dr, Seattle, WA.", 
+     {"entities": [(15, 25, "NAME"), (29, 49, "EMAIL"), (53, 66, "PHONE"), (80, 103, "ADDRESS")]}),
 ]
 
-def train_spacy(data, iterations):
-    nlp = spacy.blank('en')  # create blank Language class
+# Fine-tune the model
+def fine_tune_model(train_data, iterations):
+    # Add the new entity label to the model
     if 'ner' not in nlp.pipe_names:
-        ner = nlp.add_pipe('ner', last=True)
+        ner = nlp.create_pipe('ner')
+        nlp.add_pipe(ner, last=True)
+    else:
+        ner = nlp.get_pipe('ner')
 
-    for _, annotations in data:
+    for _, annotations in train_data:
         for ent in annotations.get('entities'):
             ner.add_label(ent[2])
 
+    # Disable other pipes during training
     other_pipes = [pipe for pipe in nlp.pipe_names if pipe != 'ner']
-    with nlp.disable_pipes(*other_pipes):  # only train NER
+    with nlp.disable_pipes(*other_pipes):
         optimizer = nlp.begin_training()
         for itn in range(iterations):
-            print(f"Starting iteration {itn}")
-            random.shuffle(data)
+            random.shuffle(train_data)
             losses = {}
-            for text, annotations in data:
+            for text, annotations in train_data:
                 doc = nlp.make_doc(text)
                 example = Example.from_dict(doc, annotations)
-                nlp.update(
-                    [example],  # batch of Example objects
-                    drop=0.2,  # dropout - make it harder to memorise data
-                    sgd=optimizer,  # callable to update weights
-                    losses=losses)
-            print(losses)
-    return nlp
+                nlp.update([example], drop=0.35, sgd=optimizer, losses=losses)
+            print(f"Iteration {itn}, Losses: {losses}")
 
-# Train the model
-prdnlp = train_spacy(TRAIN_DATA, 20)
+# Fine-tune the model with the training data
+fine_tune_model(TRAIN_DATA, 20)
 
-# Save the trained model to disk
-model_path = os.path.join(os.path.dirname(__file__), "custom_ner_model")
-prdnlp.to_disk(model_path)
-print(f"Model saved to {os.path.abspath(model_path)}")
+# Save the fine-tuned model
+nlp.to_disk("custom_ner_model")
 
-# Optionally, test the trained model
-def test_model(model_path, test_text):
-    nlp = spacy.load(model_path)
-    doc = nlp(test_text)
-    for ent in doc.ents:
-        print(ent.text, ent.start_char, ent.end_char, ent.label_)
-
-test_text = "My name is Mohamed Sudais SO Sabeer Ahamed. You can contact me at mohamedsudais360@gmail.com or +65 8806 4911. I live at 123 Main St, Singapore."
-test_model(model_path, test_text)
+# Test the fine-tuned model
+test_text = "My name is Mohamed Sudais SO Sabeer Ahamed. You can contact me at mohamedsudais360@gmail.com or +65 8806 4911. I live at 123 Example Street, Singapore 123456."
+doc = nlp(test_text)
+for ent in doc.ents:
+    print(ent.text, ent.start_char, ent.end_char, ent.label_)

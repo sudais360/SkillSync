@@ -8,7 +8,7 @@ const EmployeeDashboardScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchJobPostings = async () => {
       try {
-        const response = await axios.get('http://192.168.1.17:5000/jobpostings');
+        const response = await axios.get('http://192.168.1.17:5000/employee_jobpostings');
         setJobPostings(response.data);
       } catch (error) {
         console.error('Error fetching job postings:', error);
@@ -28,6 +28,7 @@ const EmployeeDashboardScreen = ({ navigation }) => {
         keyExtractor={(item) => item.JobID.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.jobCard} onPress={() => handlePressJobCard(item)}>
+            <Text>Company Name: {item.CompanyName}</Text>
             <Text>Title: {item.Title}</Text>
             <Text>Salary: {item.Salary}</Text>
             <Text>Description: {item.Description}</Text>
