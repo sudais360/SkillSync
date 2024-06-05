@@ -5,17 +5,20 @@ from database import Database
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 from datetime import datetime, timedelta
 import uuid
+import os
 
-import PyPDF2
+from pyresparser import ResumeParser
+import fitz  # PyMuPDF
+# import PyPDF2
 import re
 import io
 import requests
 
 import spacy
 
-# Initialize spaCy NLP model
-nlp = spacy.load("en_core_web_sm")
-
+model_path = os.path.join(os.path.dirname(__file__), "custom_ner_model")
+nlp = spacy.load(model_path)
+print(f"Loaded model from {model_path}")
 app = Flask(__name__)
 CORS(app)
 
@@ -29,8 +32,8 @@ db.connect()
 connection_string = "DefaultEndpointsProtocol=https;AccountName=skillsync;AccountKey=ojDU6hUV5lnMwFeomFd15yCQLTdfAy4mNYjAHdnFSLkXsAxdWICeq74FLhabq5byM5VZ6sHntbMm+AStDr/d0g==;EndpointSuffix=core.windows.net"
 blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 container_name = "resumes"
-
-################################################# SIGNU  P#################################################
+account_name = "skillsync"
+################################################# SIGNUP#################################################
 
 @app.route('/signup', methods=['POST'])
 def signup():
@@ -131,8 +134,8 @@ def login():
 
 ################################################# EMPLOYER  #################################################
 
-################################### Jobposting  #################
-
+################################### Jobposting  ########################################################
+################################### Create Jobposting  #################
 @app.route('/jobpostings', methods=['POST'])
 def create_job_posting():
     try:
@@ -162,6 +165,7 @@ def create_job_posting():
         print(f"Error creating job posting: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
+################################### Update Jobposting  #################
 @app.route('/jobpostings/<int:job_id>', methods=['PUT'])
 def update_job_posting(job_id):
     try:
@@ -192,7 +196,9 @@ def update_job_posting(job_id):
     except Exception as e:
         print(f"Error updating job posting: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+    
 
+################################### Get Jobposting  #################
 
 @app.route('/jobpostings', methods=['GET'])
 def get_job_postings():
@@ -229,7 +235,7 @@ def get_job_postings():
 
 
 ################################### EMPLOYEE  ###############################
-
+################################### get Job Postings  ###############################
 @app.route('/jobpostings', methods=['GET'])
 def get_job_postings_employees():
     try:
@@ -268,6 +274,8 @@ def generate_sas_token(blob_name):
     )
     return sas_token
 
+################################## Upload RESUME ######################
+
 @app.route('/upload_resume', methods=['POST'])
 def upload_resume():
     try:
@@ -276,19 +284,15 @@ def upload_resume():
 
         if file:
             print(f"Received file: {file.filename}")
-            # Generate a unique filename
-            blob_name = str(uuid.uuid4()) + "-" + file.filename
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
-            blob_client.upload_blob(file)
-            print(f"Uploaded file to blob storage: {blob_client.url}")
+            pdf_data = file.read()
 
-            # Store the blob name in the database
+            # Store the PDF data in the database
             cursor = db.conn.cursor()
-            cursor.execute("UPDATE employees SET ResumeURL = ? WHERE EmployeeID = ?", (blob_name, user_id))
+            cursor.execute("UPDATE employees SET ResumePDF = ? WHERE EmployeeID = ?", (pdf_data, user_id))
             db.conn.commit()
             cursor.close()
 
-            return jsonify({"message": "Resume uploaded successfully", "blob_name": blob_name}), 200
+            return jsonify({"message": "Resume uploaded successfully"}), 200
         else:
             print("No file provided")
             return jsonify({"message": "No file provided"}), 400
@@ -296,6 +300,20 @@ def upload_resume():
         print(f"Error uploading resume: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
+
+################################## generate the SAS token ######################
+def generate_sas_token(blob_name):
+    sas_token = generate_blob_sas(
+        account_name="skillsync",
+        container_name=container_name,
+        blob_name=blob_name,
+        account_key="ojDU6hUV5lnMwFeomFd15yCQLTdfAy4mNYjAHdnFSLkXsAxdWICeq74FLhabq5byM5VZ6sHntbMm+AStDr/d0g==",
+        permission=BlobSasPermissions(read=True),
+        expiry=datetime.utcnow() + timedelta(hours=1)
+    )
+    return sas_token
+    
+################################## Get RESUME ######################
 @app.route('/get_resume_url', methods=['GET'])
 def get_resume_url():
     try:
@@ -316,71 +334,98 @@ def get_resume_url():
         print(f"Error fetching resume URL: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
-# @app.route('/extract_resume_data', methods=['POST'])
-# def extract_resume_data():
-#     try:
-#         data = request.json
-#         file_uri = data.get('uri')
+    
+################################## extract_resume_data ######################
+@app.route('/extract_resume_data', methods=['POST'])
+def extract_resume_data():
+    try:
+        data = request.json
+        user_id = data.get('user_id')
         
-#         if not file_uri:
-#             return jsonify({"message": "File URI not provided"}), 400
+        if not user_id:
+            return jsonify({"message": "User ID not provided"}), 400
         
-#         # Download the file from the given URI
-#         response = requests.get(file_uri)
-#         file_content = response.content
-
-#         # Extract text from PDF
-#         pdf_reader = PyPDF2.PdfFileReader(io.BytesIO(file_content))
-#         num_pages = pdf_reader.getNumPages()
-#         text = ''
-#         for i in range(num_pages):
-#             text += pdf_reader.getPage(i).extract_text()
-
-#         # Process the text with spaCy
-#         doc = nlp(text)
-
-#         # Extract entities using spaCy
-#         name = ''
-#         email = ''
-#         phone = ''
-#         address = ''
-#         current_job_title = ''
-#         skills = []
-#         experience = ''
-
-#         for ent in doc.ents:
-#             if ent.label_ == "PERSON":
-#                 name = ent.text
-#             elif ent.label_ == "ORG" and not current_job_title:
-#                 current_job_title = ent.text
-#             elif ent.label_ == "GPE" and not address:
-#                 address = ent.text
-#             elif ent.label_ == "EMAIL":
-#                 email = ent.text
-#             elif ent.label_ == "PHONE":
-#                 phone = ent.text
-
-#         # Extract skills and experience manually (since they are not standard entities)
-#         skills = re.findall(r'\bSkills: (.*?)\b', text, re.IGNORECASE)
-#         experience = re.findall(r'\bExperience: (.*?)\b', text, re.IGNORECASE)
-
-#         extracted_data = {
-#             "name": name,
-#             "email": email,
-#             "phone": phone,
-#             "address": address,
-#             "currentJobTitle": current_job_title,
-#             "skills": skills[0] if skills else '',
-#             "experience": experience[0] if experience else ''
-#         }
+        cursor = db.conn.cursor()
+        cursor.execute("SELECT ResumePDF FROM employees WHERE EmployeeID = ?", (user_id,))
+        result = cursor.fetchone()
+        cursor.close()
         
-#         print(f"Extracted resume data: {extracted_data}")
+        if not result or not result[0]:
+            return jsonify({"message": "No resume found for user"}), 404
         
-#         return jsonify(extracted_data), 200
-#     except Exception as e:
-#         print(f"Error extracting resume data: {e}")
-#         return jsonify({"message": "Internal Server Error"}), 500
+        pdf_data = result[0]
+        resume_path = f"/tmp/{uuid.uuid4()}.pdf"
+        
+        with open(resume_path, 'wb') as f:
+            f.write(pdf_data)
+        
+        print(f"Resume downloaded to {resume_path}")
+        
+        with open(resume_path, 'rb') as f:
+            print(f"File size: {os.path.getsize(resume_path)} bytes")
+            print(f"First 20 bytes of file: {f.read(20)}")
 
+        doc = fitz.open(resume_path)
+        text = ""
+        for page in doc:
+            text += page.get_text()
+
+        doc.close()
+        os.remove(resume_path)
+
+        print("Extracted Text:\n", text)
+
+        parsed_data = parse_text_with_ner(text)
+        
+        print(f"Extracted resume data: {parsed_data}")
+        return jsonify(parsed_data), 200
+    except Exception as e:
+        print(f"Error extracting resume data: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+def parse_text_with_ner(text):
+    doc = nlp(text)
+    extracted_data = {
+        "name": None,
+        "email": None,
+        "phone": None,
+        "address": None
+    }
+
+    for ent in doc.ents:
+        if ent.label_ == "NAME":
+            extracted_data["name"] = ent.text
+        elif ent.label_ == "PHONE":
+            extracted_data["phone"] = ent.text
+
+    # Use regex to extract email and address
+    email_regex = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    phone_regex = r'\+?\d[\d -]{8,}\d'
+    # More refined regex for address
+    address_regex = r'\d{1,5}\s+\w+(?:\s+\w+)*(?:\s(?:Street|St|Avenue|Ave|Boulevard|Blvd|Road|Rd|Lane|Ln|Drive|Dr|Court|Ct|Plaza|Plz|Square|Sq|Alley|Al|Parkway|Pkwy|Trail|Trl|Terrace|Ter|Place|Pl))?(?:,\s*\w+)*'
+
+    emails = re.findall(email_regex, text)
+    phones = re.findall(phone_regex, text)
+    addresses = re.findall(address_regex, text)
+
+    if emails:
+        extracted_data["email"] = emails[0]
+    if phones:
+        extracted_data["phone"] = phones[0]
+    if addresses:
+        extracted_data["address"] = addresses[0]
+
+    # Additional heuristic: look for "Address:" or "Location:" preceding the address
+    address_context_regex = r'(Address|Location):\s*(.*)'
+    address_context_match = re.search(address_context_regex, text)
+    if address_context_match:
+        extracted_data["address"] = address_context_match.group(2).strip()
+    elif addresses:
+        extracted_data["address"] = addresses[0]
+
+    return extracted_data
+################################## update_employee_settings ######################
+    
 @app.route('/update_employee_settings', methods=['POST'])
 def update_employee_settings():
     try:
