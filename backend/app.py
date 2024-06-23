@@ -9,6 +9,7 @@ import os
 
 from pyresparser import ResumeParser
 import fitz  # PyMuPDF
+
 # import PyPDF2
 import re
 import io
@@ -228,9 +229,40 @@ def get_job_postings():
         
         cursor.close()
         return jsonify(job_postings_list), 200
-    except Exception as e:
+    except Exception as e: 
         print(f"Error fetching job postings: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+
+    
+################################### get_applicants_for_job  ###############################
+# Modify the existing get_applicants_for_job endpoint
+@app.route('/job/<int:job_id>/applicants', methods=['GET'])
+def get_applicants_for_job(job_id):
+    try:
+        cursor = db.conn.cursor()
+        cursor.execute("""
+            SELECT e.EmployeeID, e.Name, e.Email, e.Phone, e.CurrentJobTitle, e.Skills, e.Experience
+            FROM Applications a
+            JOIN employees e ON a.EmployeeID = e.EmployeeID
+            WHERE a.JobID = ?
+        """, (job_id,))
+        applicants = cursor.fetchall()
+
+        applicants_list = [{
+            'id': applicant[0],
+            'name': applicant[1],
+            'email': applicant[2],
+            'phone': applicant[3],
+            'currentJobTitle': applicant[4],
+            'skills': applicant[5],
+            'experience': applicant[6]
+        } for applicant in applicants]
+
+        cursor.close()
+        return jsonify(applicants_list), 200
+    except Exception as e:
+        return jsonify({"message": "Internal Server Error"}), 500
+
 
 
 ################################### EMPLOYEE  ###############################
@@ -487,6 +519,63 @@ def get_employee_data():
     except Exception as e:
         print(f"Error fetching employee data: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+    
+ ################################## apply_for_job ######################   
+@app.route('/apply', methods=['POST'])
+def apply_for_job():
+    try:
+        data = request.json
+        employee_id = data.get('applicant_id')  # Ensure the key matches the frontend
+        job_id = data.get('job_id')
+        application_date = datetime.now()  # Get the current date and time
+
+        if not all([employee_id, job_id]):
+            return jsonify({"message": "Missing required fields."}), 400
+
+        cursor = db.conn.cursor()
+        cursor.execute("""
+            INSERT INTO Applications (EmployeeID, JobID, ApplicationDate, Status)
+            VALUES (?, ?, ?, ?)
+        """, (employee_id, job_id, application_date, "applied"))
+        db.conn.commit()
+        cursor.close()
+
+        return jsonify({"message": "Application successful"}), 201
+    except Exception as e:
+        print(f"Error applying for job: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+ ################################## applied_jobs ######################   
+@app.route('/applied_jobs', methods=['GET'])
+def get_applied_jobs():
+    try:
+        employee_id = request.args.get('employee_id')
+        cursor = db.conn.cursor()
+        cursor.execute("""
+            SELECT jp.JobID, jp.Title, e.Name as CompanyName, a.Status
+            FROM Applications a
+            JOIN JobPostings jp ON a.JobID = jp.JobID
+            JOIN employers e ON jp.EmployerID = e.EmployerID
+            WHERE a.EmployeeID = ?
+        """, (employee_id,))
+        applied_jobs = cursor.fetchall()
+
+        applied_jobs_list = [{
+            'JobID': job[0],
+            'Title': job[1],
+            'CompanyName': job[2],
+            'Status': job[3]
+        } for job in applied_jobs]
+
+        cursor.close()
+        return jsonify(applied_jobs_list), 200
+    except Exception as e:
+        print(f"Error fetching applied jobs: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+
+
+
 
 
 if __name__ == '__main__':

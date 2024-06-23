@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Button } from 'react-native';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -26,7 +26,15 @@ const EmployerDashboardScreen = ({ navigation, route }) => {
   );
 
   const handlePressJobCard = (jobDetails) => {
-    navigation.navigate('JobDetails', { jobDetails });
+    navigation.navigate('JobDetailsNavigator', { screen: 'JobDetails', params: { jobDetails } });
+  };
+
+  const handleEditJobPosting = (jobDetails) => {
+    navigation.navigate('JobDetailsNavigator', { screen: 'JobDetails', params: { jobDetails } });
+  };
+
+  const handleViewApplicants = (jobId) => {
+    navigation.navigate('JobDetailsNavigator', { screen: 'JobApplicants', params: { jobId } });
   };
 
   return (
@@ -49,12 +57,14 @@ const EmployerDashboardScreen = ({ navigation, route }) => {
       {/* Display all job postings */}
       <FlatList
         data={jobPostings}
-        keyExtractor={(item) => item.JobID.toString()}
+        keyExtractor={(item) => item.JobID.toString()} // Ensure each key is unique
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.jobCard} onPress={() => handlePressJobCard(item)}>
+          <View style={styles.jobCard}>
             <Text>Title: {item.Title}</Text>
             <Text>Salary: {item.Salary}</Text>
-          </TouchableOpacity>
+            <Button title="View Applicants" onPress={() => handleViewApplicants(item.JobID)} />
+            <Button title="Edit Job Posting" onPress={() => handleEditJobPosting(item)} />
+          </View>
         )}
       />
     </View>

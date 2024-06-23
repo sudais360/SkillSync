@@ -1,33 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, Button, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 
-const EmployeeAppliedJobsScreen = ({ route }) => {
-  const { employeeId } = route.params;
-  const [appliedJobs, setAppliedJobs] = useState([]);
+const EmployeeSavedJobsScreen = () => {
+  const [savedJobs, setSavedJobs] = useState([]);
 
   useEffect(() => {
-    const fetchAppliedJobs = async () => {
+    const fetchSavedJobs = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.17:5000/applied_jobs?employee_id=${employeeId}`);
-        setAppliedJobs(response.data);
-
-        // Save the applied jobs locally
-        await AsyncStorage.setItem('appliedJobs', JSON.stringify(response.data));
+        const savedJobs = await AsyncStorage.getItem('savedJobs');
+        setSavedJobs(savedJobs ? JSON.parse(savedJobs) : []);
       } catch (error) {
-        console.error('Error fetching applied jobs:', error);
+        console.error('Error fetching saved jobs:', error);
       }
     };
 
-    fetchAppliedJobs();
-  }, [employeeId]);
+    fetchSavedJobs();
+  }, []);
 
   const handleRemoveJob = async (jobId) => {
     try {
-      const updatedJobs = appliedJobs.filter(job => job.JobID !== jobId);
-      await AsyncStorage.setItem('appliedJobs', JSON.stringify(updatedJobs));
-      setAppliedJobs(updatedJobs);
+      const updatedJobs = savedJobs.filter(job => job.JobID !== jobId);
+      await AsyncStorage.setItem('savedJobs', JSON.stringify(updatedJobs));
+      setSavedJobs(updatedJobs);
       Alert.alert('Job removed successfully!');
     } catch (error) {
       console.error('Error removing job:', error);
@@ -37,15 +32,14 @@ const EmployeeAppliedJobsScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Applied Jobs</Text>
+      <Text style={styles.title}>Saved Jobs</Text>
       <FlatList
-        data={appliedJobs}
+        data={savedJobs}
         keyExtractor={(item) => item.JobID.toString()}
         renderItem={({ item }) => (
           <View style={styles.jobCard}>
             <Text>Title: {item.Title}</Text>
             <Text>Company: {item.CompanyName}</Text>
-            <Text>Status: {item.Status}</Text>
             <Button title="Remove" onPress={() => handleRemoveJob(item.JobID)} />
           </View>
         )}
@@ -79,4 +73,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EmployeeAppliedJobsScreen;
+export default EmployeeSavedJobsScreen;

@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 // Importing Screens
 import EmployeeDashboardScreen from '../employees/EmployeeDashboardScreen';
 import EmployeeAppliedJobsScreen from '../employees/EmployeeAppliedJobsScreen';
+import EmployeeSavedJobsScreen from '../employees/EmployeeSavedJobsScreen';
 import EmployeeSkillAssessmentScreen from '../employees/EmployeeSkillAssessmentScreen';
 import EmployeeSettingsScreen from '../employees/EmployeeSettingsScreen';
 
@@ -23,6 +24,8 @@ const EmployeeTabs = ({ route }) => {
             iconName = 'view-dashboard';
           } else if (route.name === 'EmployeeAppliedJobs') {
             iconName = 'file-document';
+          } else if (route.name === 'EmployeeSavedJobs') {
+            iconName = 'bookmark';
           } else if (route.name === 'EmployeeSkillAssessment') {
             iconName = 'pencil';
           } else if (route.name === 'EmployeeSettings') {
@@ -37,6 +40,7 @@ const EmployeeTabs = ({ route }) => {
     >
       <Tab.Screen name="EmployeeDashboard" component={EmployeeDashboardScreen} initialParams={{ employeeId }} />
       <Tab.Screen name="EmployeeAppliedJobs" component={EmployeeAppliedJobsScreen} initialParams={{ employeeId }} />
+      <Tab.Screen name="EmployeeSavedJobs" component={EmployeeSavedJobsScreen} />
       <Tab.Screen name="EmployeeSkillAssessment" component={EmployeeSkillAssessmentScreen} initialParams={{ employeeId }} />
       <Tab.Screen name="EmployeeSettings" component={EmployeeSettingsScreen} initialParams={{ employeeId }} />
     </Tab.Navigator>

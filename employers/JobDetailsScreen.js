@@ -32,7 +32,7 @@ const JobDetailsScreen = ({ route, navigation }) => {
       Alert.alert("Success", "Job details updated successfully!");
 
       // Navigate back to the dashboard and refresh the data
-      navigation.navigate('EmployerDashboard', { recentlyAddedJob: updatedJobDetails });
+      navigation.navigate('EmployerDashboard', { recentlyUpdatedJob: updatedJobDetails });
     } catch (error) {
       console.error('Error updating job details:', error);
       Alert.alert("Error", "Failed to update job details. Please try again.");

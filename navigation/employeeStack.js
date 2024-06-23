@@ -13,7 +13,7 @@ const EmployeeStack = ({ route }) => {
   return (
     <Stack.Navigator>
       <Stack.Screen name="EmployeeTabs" component={EmployeeTabs} initialParams={{ employeeId }} options={{ headerShown: false }} />
-      <Stack.Screen name="EmployeeJobDetails" component={EmployeeJobDetailsScreen} />
+      <Stack.Screen name="EmployeeJobDetails" component={EmployeeJobDetailsScreen}initialParams={{ employeeId }} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 };
