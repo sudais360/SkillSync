@@ -241,27 +241,38 @@ def get_applicants_for_job(job_id):
     try:
         cursor = db.conn.cursor()
         cursor.execute("""
-            SELECT e.EmployeeID, e.Name, e.Email, e.Phone, e.CurrentJobTitle, e.Skills, e.Experience
+            SELECT e.EmployeeID, e.Name, e.Email, e.Phone, e.CurrentJobTitle, e.Skills
             FROM Applications a
             JOIN employees e ON a.EmployeeID = e.EmployeeID
             WHERE a.JobID = ?
         """, (job_id,))
         applicants = cursor.fetchall()
 
-        applicants_list = [{
-            'id': applicant[0],
-            'name': applicant[1],
-            'email': applicant[2],
-            'phone': applicant[3],
-            'currentJobTitle': applicant[4],
-            'skills': applicant[5],
-            'experience': applicant[6]
-        } for applicant in applicants]
+        # Fetch job details
+        cursor.execute("SELECT SkillsRequired FROM JobPostings WHERE JobID = ?", (job_id,))
+        job_skills_result = cursor.fetchone()
+        job_skills = job_skills_result[0].split(',') if job_skills_result and job_skills_result[0] else []
+
+        applicants_list = []
+        for applicant in applicants:
+            applicant_skills = applicant[5].split(',') if applicant[5] else []
+            score = calculate_skill_score(applicant_skills, job_skills)
+            applicants_list.append({
+                'id': applicant[0],
+                'name': applicant[1],
+                'email': applicant[2],
+                'phone': applicant[3],
+                'currentJobTitle': applicant[4],
+                'skills': applicant_skills,
+                'score': score
+            })
 
         cursor.close()
         return jsonify(applicants_list), 200
     except Exception as e:
+        print(f"Error fetching applicants for job: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+
 
 
 
@@ -426,7 +437,8 @@ def parse_text_with_ner(text):
         "name": None,
         "email": None,
         "phone": None,
-        "address": None
+        "address": None,
+        "skills": []
     }
 
     for ent in doc.ents:
@@ -434,11 +446,12 @@ def parse_text_with_ner(text):
             extracted_data["name"] = ent.text
         elif ent.label_ == "PHONE":
             extracted_data["phone"] = ent.text
+        elif ent.label_ == "SKILL":
+            extracted_data["skills"].append(ent.text)
 
     # Use regex to extract email and address
     email_regex = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_regex = r'\+?\d[\d -]{8,}\d'
-    # More refined regex for address
     address_regex = r'\d{1,5}\s+\w+(?:\s+\w+)*(?:\s(?:Street|St|Avenue|Ave|Boulevard|Blvd|Road|Rd|Lane|Ln|Drive|Dr|Court|Ct|Plaza|Plz|Square|Sq|Alley|Al|Parkway|Pkwy|Trail|Trl|Terrace|Ter|Place|Pl))?(?:,\s*\w+)*'
 
     emails = re.findall(email_regex, text)
@@ -461,6 +474,7 @@ def parse_text_with_ner(text):
         extracted_data["address"] = addresses[0]
 
     return extracted_data
+
 ################################## update_employee_settings ######################
     
 @app.route('/update_employee_settings', methods=['POST'])
@@ -575,6 +589,16 @@ def get_applied_jobs():
 
 
 
+
+################################### Scoring Criteria  ###############################
+################################### calculate_score  ###############################
+
+def calculate_skill_score(applicant_skills, job_skills):
+    if not job_skills:
+        return 0
+
+    match_count = len(set(applicant_skills) & set(job_skills))
+    return (match_count / len(job_skills)) * 100
 
 
 

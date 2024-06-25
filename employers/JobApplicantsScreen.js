@@ -5,14 +5,17 @@ import axios from 'axios';
 const JobApplicantsScreen = ({ route, navigation }) => {
   const { jobId } = route.params;
   const [applicants, setApplicants] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchApplicants = async () => {
       try {
         const response = await axios.get(`http://192.168.1.17:5000/job/${jobId}/applicants`);
-        setApplicants(response.data);
+        const sortedApplicants = response.data.sort((a, b) => b.score - a.score);
+        setApplicants(sortedApplicants);
       } catch (error) {
         console.error('Error fetching applicants:', error);
+        setError(error);
       }
     };
 
@@ -23,18 +26,30 @@ const JobApplicantsScreen = ({ route, navigation }) => {
     navigation.navigate('ApplicantDetails', { applicant });
   };
 
+  const renderApplicant = ({ item }) => (
+    <TouchableOpacity onPress={() => handlePressApplicant(item)} style={styles.applicantCard}>
+      <Text>Name: {item.name}</Text>
+      <Text>Phone: {item.phone}</Text>
+      <Text>Score: {Math.round(item.score).toString()}</Text>
+    </TouchableOpacity>
+  );
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Applicants</Text>
+        <Text style={styles.errorText}>Error fetching applicants: {error.message}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Applicants</Text>
       <FlatList
         data={applicants}
         keyExtractor={(item) => item.id.toString()} // Ensure each key is unique
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handlePressApplicant(item)} style={styles.applicantCard}>
-            <Text>Name: {item.name}</Text>
-            <Text>Phone: {item.phone}</Text>
-          </TouchableOpacity>
-        )}
+        renderItem={renderApplicant}
       />
     </View>
   );
@@ -62,6 +77,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 20,
   },
 });
 
