@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, Button, StyleSheet, Text } from 'react-native';
+import { API_BASE_URL } from '../config';
 
 const SignupScreen = ({ navigation, route }) => {
   const { role } = route.params; // Get the role parameter from the navigation route
@@ -17,7 +18,7 @@ const SignupScreen = ({ navigation, route }) => {
 
   const handleSignup = () => {
     // Include role in the signup data
-    fetch('http://192.168.1.17:5000/signup', {
+    fetch(`${API_BASE_URL}/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Button, Alert } from 'react-native';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const JobDetailsScreen = ({ route, navigation }) => {
   // Retrieve job details from navigation params
@@ -24,7 +25,7 @@ const JobDetailsScreen = ({ route, navigation }) => {
       };
 
       // Make a PUT request to update the job details
-      const response = await axios.put(`http://192.168.1.17:5000/jobpostings/${jobDetails.JobID}`, updatedJobDetails);
+      const response = await axios.put(`${API_BASE_URL}/jobpostings/${jobDetails.JobID}`, updatedJobDetails);
 
       console.log("Updated Job Details:", response.data);
       

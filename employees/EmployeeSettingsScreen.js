@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Button, ScrollView } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const EmployeeSettingsScreen = ({ route }) => {
   const { employeeId } = route.params;
@@ -19,7 +20,7 @@ const EmployeeSettingsScreen = ({ route }) => {
   useEffect(() => {
     const fetchEmployeeData = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.17:5000/get_employee_data?user_id=${employeeId}`);
+        const response = await axios.get(`${API_BASE_URL}/get_employee_data?user_id=${employeeId}`);
         if (response.data) {
           setFormData(response.data);
         }
@@ -59,7 +60,7 @@ const EmployeeSettingsScreen = ({ route }) => {
 
     try {
       console.log("Uploading resume with data:", formData);
-      const response = await axios.post('http://192.168.1.17:5000/upload_resume', formData, {
+      const response = await axios.post(`${API_BASE_URL}/upload_resume`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -74,7 +75,7 @@ const EmployeeSettingsScreen = ({ route }) => {
 
   const extractResumeData = async () => {
     try {
-      const response = await axios.post('http://192.168.1.17:5000/extract_resume_data', { user_id: employeeId });
+      const response = await axios.post(`${API_BASE_URL}/extract_resume_data`, { user_id: employeeId });
       if (response.data) {
         setFormData(response.data);
       }
@@ -92,7 +93,7 @@ const EmployeeSettingsScreen = ({ route }) => {
 
   const saveSettings = async () => {
     try {
-      await axios.post('http://192.168.1.17:5000/update_employee_settings', {
+      await axios.post(`${API_BASE_URL}/update_employee_settings`, {
         user_id: employeeId,
         ...formData,
       });

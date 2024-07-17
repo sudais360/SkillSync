@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, Button, StyleSheet, Alert } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../config';
 
 const EmployeeJobDetailsScreen = ({ route, navigation }) => {
   const { jobDetails, employeeId } = route.params;
@@ -30,7 +31,7 @@ const EmployeeJobDetailsScreen = ({ route, navigation }) => {
         applicant_id: employeeId, // Ensure the key matches what the backend expects
         job_id: jobDetails.JobID,
       };
-      const response = await axios.post('http://192.168.1.17:5000/apply', applicationData);
+      const response = await axios.post(`${API_BASE_URL}/apply`, applicationData);
 
       // Save to local storage
       parsedAppliedJobs.push(jobDetails);

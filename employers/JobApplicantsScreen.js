@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const JobApplicantsScreen = ({ route, navigation }) => {
   const { jobId } = route.params;
@@ -10,7 +11,7 @@ const JobApplicantsScreen = ({ route, navigation }) => {
   useEffect(() => {
     const fetchApplicants = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.17:5000/job/${jobId}/applicants`);
+        const response = await axios.get(`${API_BASE_URL}/job/${jobId}/applicants`);
         const sortedApplicants = response.data.sort((a, b) => b.score - a.score);
         setApplicants(sortedApplicants);
       } catch (error) {

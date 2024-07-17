@@ -1,53 +1,95 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Button, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput } from 'react-native';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
-const EmployeeAppliedJobsScreen = ({ route }) => {
-  const { employeeId } = route.params;
-  const [appliedJobs, setAppliedJobs] = useState([]);
+const EmployeeDashboardScreen = ({ navigation }) => {
+  const [jobPostings, setJobPostings] = useState([]);
+  const [filteredJobPostings, setFilteredJobPostings] = useState([]);
+  const [suggestedJobs, setSuggestedJobs] = useState([]);
+  const [preferredJobTitle, setPreferredJobTitle] = useState('');
+  const [employeeId, setEmployeeId] = useState(1); // Assuming you have a way to get the logged-in employee's ID
 
   useEffect(() => {
-    const fetchAppliedJobs = async () => {
+    const fetchJobPostings = async () => {
       try {
-        const response = await axios.get(`http://192.168.1.17:5000/applied_jobs?employee_id=${employeeId}`);
-        setAppliedJobs(response.data);
-
-        // Save the applied jobs locally
-        await AsyncStorage.setItem('appliedJobs', JSON.stringify(response.data));
+        const response = await axios.get(`${API_BASE_URL}/employee_jobpostings`);
+        setJobPostings(response.data);
+        setFilteredJobPostings(response.data);
       } catch (error) {
-        console.error('Error fetching applied jobs:', error);
+        console.error('Error fetching job postings:', error);
       }
     };
 
-    fetchAppliedJobs();
-  }, [employeeId]);
+    const fetchSuggestedJobs = async () => {
+      if (employeeId) {
+        try {
+          const response = await axios.post(`${API_BASE_URL}/suggest_jobs`, { employee_id: employeeId, preferred_job_title: preferredJobTitle });
+          setSuggestedJobs(response.data);
+        } catch (error) {
+          console.error('Error fetching suggested jobs:', error);
+        }
+      }
+    };
 
-  const handleRemoveJob = async (jobId) => {
-    try {
-      const updatedJobs = appliedJobs.filter(job => job.JobID !== jobId);
-      await AsyncStorage.setItem('appliedJobs', JSON.stringify(updatedJobs));
-      setAppliedJobs(updatedJobs);
-      Alert.alert('Job removed successfully!');
-    } catch (error) {
-      console.error('Error removing job:', error);
-      Alert.alert('Failed to remove job. Please try again.');
+    fetchJobPostings();
+    fetchSuggestedJobs();
+  }, [preferredJobTitle, employeeId]);
+
+  useEffect(() => {
+    const filtered = jobPostings.filter(job => job.Title.toLowerCase().includes(preferredJobTitle.toLowerCase()));
+    setFilteredJobPostings(filtered);
+  }, [preferredJobTitle, jobPostings]);
+
+  const handlePressJobCard = (jobDetails) => {
+    navigation.navigate('EmployeeJobDetails', { jobDetails });
+  };
+
+  const handlePreferredJobTitleChange = async (title) => {
+    setPreferredJobTitle(title);
+    if (employeeId) {
+      try {
+        await axios.post(`${API_BASE_URL}/update_keyword_frequency`, { employee_id: employeeId, keyword: title });
+      } catch (error) {
+        console.error('Error updating keyword frequency:', error);
+      }
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Applied Jobs</Text>
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Preferred job title"
+        value={preferredJobTitle}
+        onChangeText={handlePreferredJobTitleChange}
+      />
+      <Text style={styles.sectionTitle}>Suggested Jobs</Text>
       <FlatList
-        data={appliedJobs}
+        data={suggestedJobs}
         keyExtractor={(item) => item.JobID.toString()}
         renderItem={({ item }) => (
-          <View style={styles.jobCard}>
-            <Text>Title: {item.Title}</Text>
-            <Text>Company: {item.CompanyName}</Text>
-            <Text>Status: {item.Status}</Text>
-            <Button title="Remove" onPress={() => handleRemoveJob(item.JobID)} />
-          </View>
+          <TouchableOpacity style={styles.jobCard} onPress={() => handlePressJobCard(item)}>
+            <Text style={styles.companyName}>Company Name: {item.CompanyName}</Text>
+            <Text style={styles.jobTitle}>Title: {item.Title}</Text>
+            <Text>Salary: {item.Salary}</Text>
+            <Text>Description: {item.Description}</Text>
+            <Text>Relevance Score: {item.RelevanceScore.toFixed(2)}%</Text>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={<Text>No suggested jobs found</Text>}
+      />
+      <Text style={styles.sectionTitle}>All Job Postings</Text>
+      <FlatList
+        data={filteredJobPostings}
+        keyExtractor={(item) => item.JobID.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.jobCard} onPress={() => handlePressJobCard(item)}>
+            <Text style={styles.companyName}>Company Name: {item.CompanyName}</Text>
+            <Text style={styles.jobTitle}>Title: {item.Title}</Text>
+            <Text>Salary: {item.Salary}</Text>
+            <Text>Description: {item.Description}</Text>
+          </TouchableOpacity>
         )}
       />
     </View>
@@ -58,11 +100,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#f8f9fa',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  searchBar: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
     marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
   jobCard: {
     backgroundColor: '#fff',
@@ -77,6 +128,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
+  companyName: {
+    fontWeight: 'bold',
+  },
+  jobTitle: {
+    fontSize: 16,
+    marginTop: 5,
+  },
 });
 
-export default EmployeeAppliedJobsScreen;
+export default EmployeeDashboardScreen;
