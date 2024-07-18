@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, Text } from 'react-native';
+import { View, TextInput, StyleSheet, Text, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import { API_BASE_URL } from '../config';
 
 const SignupScreen = ({ navigation, route }) => {
@@ -40,55 +40,102 @@ const SignupScreen = ({ navigation, route }) => {
       })
       .catch(error => {
         console.error('Error signing up:', error);
+        Alert.alert('Error', error.message);
       });
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.userTypeText}>Sign up as {role || 'Unknown'}</Text>
-      <TextInput
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={styles.input}
-      />
-      <Button title="Sign up" onPress={handleSignup} />
-    </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.bannerText}>Welcome to SkillSync</Text>
+      <View style={styles.cutoutContainer}>
+        <Image source={require('../Images/Logo/skillSyncLogo.png')} style={styles.logo} />
+        <Text style={styles.userTypeText}>Sign up as {role || 'Unknown'}</Text>
+        <TextInput
+          placeholder="Name"
+          value={name}
+          onChangeText={setName}
+          style={styles.input}
+        />
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+        />
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          style={styles.input}
+        />
+        <TouchableOpacity style={styles.signUpButton} onPress={handleSignup}>
+          <Text style={styles.buttonText}>Sign up</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    backgroundColor: '#f5f5f5',
+    padding: 20,
   },
-  input: {
+  bannerText: {
+    color: '#333',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  cutoutContainer: {
     width: '100%',
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  logo: {
+    width: 400,
+    height: 250,
+    marginBottom: 20,
   },
   userTypeText: {
     fontSize: 18,
-    marginBottom: 10,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  input: {
+    width: '100%',
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    backgroundColor: '#fff',
+    marginBottom: 15,
+    padding: 10,
+  },
+  signUpButton: {
+    width: '100%',
+    height: 50,
+    backgroundColor: 'tomato',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

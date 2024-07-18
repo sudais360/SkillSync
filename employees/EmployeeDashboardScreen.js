@@ -74,18 +74,18 @@ const EmployeeDashboardScreen = ({ route, navigation }) => {
     <FlatList
       ListHeaderComponent={
         <View style={styles.headerContainer}>
-          <TextInput
-            style={styles.searchBar}
-            placeholder="Preferred job title"
-            value={preferredJobTitle}
-            onChangeText={setPreferredJobTitle}
-          />
-          <View style={styles.buttonContainer}>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchBar}
+              placeholder="Preferred job title"
+              value={preferredJobTitle}
+              onChangeText={setPreferredJobTitle}
+            />
             <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-              <Text style={styles.searchButtonText}>SEARCH</Text>
+              <Text style={styles.searchButtonText}>Search</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-              <Text style={styles.resetButtonText}>RESET</Text>
+              <Text style={styles.resetButtonText}>Reset</Text>
             </TouchableOpacity>
           </View>
 
@@ -147,28 +147,30 @@ const styles = StyleSheet.create({
   headerContainer: {
     paddingBottom: 20,
   },
-  searchBar: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 10,
-    backgroundColor: '#fff',
-  },
-  buttonContainer: {
+  searchContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'gray',
+    marginBottom: 10,
+    paddingRight: 10,
+  },
+  searchBar: {
+    flex: 1,
+    height: 40,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 5,
+    borderBottomLeftRadius: 5,
   },
   searchButton: {
     backgroundColor: '#007BFF',
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     borderRadius: 5,
-    flex: 1,
-    alignItems: 'center',
-    marginRight: 10,
-    elevation: 2,
+    marginLeft: 10,
   },
   searchButtonText: {
     color: '#fff',
@@ -176,11 +178,10 @@ const styles = StyleSheet.create({
   },
   resetButton: {
     backgroundColor: '#6c757d',
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     borderRadius: 5,
-    flex: 1,
-    alignItems: 'center',
-    elevation: 2,
+    marginLeft: 10,
   },
   resetButtonText: {
     color: '#fff',
