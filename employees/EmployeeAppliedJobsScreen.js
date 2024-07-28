@@ -1,96 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
-const EmployeeDashboardScreen = ({ navigation }) => {
-  const [jobPostings, setJobPostings] = useState([]);
-  const [filteredJobPostings, setFilteredJobPostings] = useState([]);
-  const [suggestedJobs, setSuggestedJobs] = useState([]);
-  const [preferredJobTitle, setPreferredJobTitle] = useState('');
+const EmployeeAppliedJobsScreen = ({ navigation }) => {
+  const [appliedJobs, setAppliedJobs] = useState([]);
   const [employeeId, setEmployeeId] = useState(1); // Assuming you have a way to get the logged-in employee's ID
 
   useEffect(() => {
-    const fetchJobPostings = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/employee_jobpostings`);
-        setJobPostings(response.data);
-        setFilteredJobPostings(response.data);
-      } catch (error) {
-        console.error('Error fetching job postings:', error);
-      }
-    };
-
-    const fetchSuggestedJobs = async () => {
+    const fetchAppliedJobs = async () => {
       if (employeeId) {
         try {
-          const response = await axios.post(`${API_BASE_URL}/suggest_jobs`, { employee_id: employeeId, preferred_job_title: preferredJobTitle });
-          setSuggestedJobs(response.data);
+          const response = await axios.get(`${API_BASE_URL}/applied_jobs`, { params: { employee_id: employeeId } });
+          setAppliedJobs(response.data);
         } catch (error) {
-          console.error('Error fetching suggested jobs:', error);
+          console.error('Error fetching applied jobs:', error);
         }
       }
     };
 
-    fetchJobPostings();
-    fetchSuggestedJobs();
-  }, [preferredJobTitle, employeeId]);
-
-  useEffect(() => {
-    const filtered = jobPostings.filter(job => job.Title.toLowerCase().includes(preferredJobTitle.toLowerCase()));
-    setFilteredJobPostings(filtered);
-  }, [preferredJobTitle, jobPostings]);
+    fetchAppliedJobs();
+  }, [employeeId]);
 
   const handlePressJobCard = (jobDetails) => {
     navigation.navigate('EmployeeJobDetails', { jobDetails });
   };
 
-  const handlePreferredJobTitleChange = async (title) => {
-    setPreferredJobTitle(title);
-    if (employeeId) {
-      try {
-        await axios.post(`${API_BASE_URL}/update_keyword_frequency`, { employee_id: employeeId, keyword: title });
-      } catch (error) {
-        console.error('Error updating keyword frequency:', error);
-      }
-    }
-  };
-
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Preferred job title"
-        value={preferredJobTitle}
-        onChangeText={handlePreferredJobTitleChange}
-      />
-      <Text style={styles.sectionTitle}>Suggested Jobs</Text>
+      <Text style={styles.sectionTitle}>Applied Jobs</Text>
       <FlatList
-        data={suggestedJobs}
+        data={appliedJobs}
         keyExtractor={(item) => item.JobID.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.jobCard} onPress={() => handlePressJobCard(item)}>
             <Text style={styles.companyName}>Company Name: {item.CompanyName}</Text>
             <Text style={styles.jobTitle}>Title: {item.Title}</Text>
-            <Text>Salary: {item.Salary}</Text>
-            <Text>Description: {item.Description}</Text>
-            <Text>Relevance Score: {item.RelevanceScore.toFixed(2)}%</Text>
+            <Text>Status: {item.Status}</Text>
           </TouchableOpacity>
         )}
-        ListEmptyComponent={<Text>No suggested jobs found</Text>}
-      />
-      <Text style={styles.sectionTitle}>All Job Postings</Text>
-      <FlatList
-        data={filteredJobPostings}
-        keyExtractor={(item) => item.JobID.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.jobCard} onPress={() => handlePressJobCard(item)}>
-            <Text style={styles.companyName}>Company Name: {item.CompanyName}</Text>
-            <Text style={styles.jobTitle}>Title: {item.Title}</Text>
-            <Text>Salary: {item.Salary}</Text>
-            <Text>Description: {item.Description}</Text>
-          </TouchableOpacity>
-        )}
+        ListEmptyComponent={<Text>No applied jobs found</Text>}
       />
     </View>
   );
@@ -101,14 +50,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#f8f9fa',
-  },
-  searchBar: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
@@ -137,4 +78,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EmployeeDashboardScreen;
+export default EmployeeAppliedJobsScreen;

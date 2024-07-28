@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Button, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Button, Modal, Alert } from 'react-native';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
 import { API_BASE_URL } from '../config';
@@ -9,6 +9,7 @@ const EmployerDashboardScreen = ({ navigation, route }) => {
   const [suggestedEmployees, setSuggestedEmployees] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [shareableUrl, setShareableUrl] = useState(null); // State to hold the shareable URL
   const recentlyAddedJob = route.params?.recentlyAddedJob;
   const { employerId } = route.params; // Receive employerId from route params
 
@@ -63,8 +64,24 @@ const EmployerDashboardScreen = ({ navigation, route }) => {
   const handleSuggestEmployees = (job) => {
     setSelectedJob(job);
     console.log('Selected job:', job); // Log the selected job to verify job details
-    console.log('SkillsRequired:', job.Skills ); // Log the SkillsRequired to ensure it's fetched
-    fetchSuggestedEmployees(job.JobID, job.Title, job.Skills );
+    console.log('Skills:', job.Skills); // Log the Skills to ensure it's fetched
+    fetchSuggestedEmployees(job.JobID, job.Title, job.Skills);
+  };
+
+  const handleShareJob = async (job) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/generate_shareable_url`, {
+        job_id: job.JobID,
+        employee_id: 'some_employee_id', // Replace with actual employee ID or handle dynamically
+      });
+
+      const url = response.data.shareable_url;
+      setShareableUrl(url); // Set the shareable URL to state
+      Alert.alert('Shareable URL generated', url); // Show the URL in an alert
+    } catch (error) {
+      console.error('Error generating shareable URL:', error);
+      Alert.alert('Failed to generate shareable URL. Please try again.');
+    }
   };
 
   return (
@@ -93,13 +110,22 @@ const EmployerDashboardScreen = ({ navigation, route }) => {
             <Text>Title: {item.Title}</Text>
             <Text>Salary: {item.Salary}</Text>
             <Text>Location: {item.Location}</Text>
-            <Text>Skills: {item.Skills }</Text>
+            <Text>Skills: {item.Skills}</Text>
             <Button title="View Applicants" onPress={() => handleViewApplicants(item.JobID)} />
             <Button title="Edit Job Posting" onPress={() => handleEditJobPosting(item)} />
             <Button title="Suggest Employees" onPress={() => handleSuggestEmployees(item)} />
+            <Button title="Share Job" onPress={() => handleShareJob(item)} />
           </View>
         )}
       />
+
+      {/* Display the shareable URL if available */}
+      {shareableUrl && (
+        <View style={styles.shareableUrlContainer}>
+          <Text style={styles.shareableUrlText}>Shareable URL:</Text>
+          <Text style={styles.shareableUrl}>{shareableUrl}</Text>
+        </View>
+      )}
 
       {/* Modal for displaying suggested employees */}
       <Modal
@@ -173,6 +199,21 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 18,
     marginBottom: 10,
+  },
+  shareableUrlContainer: {
+    marginTop: 20,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'lightgray',
+    borderRadius: 5,
+    backgroundColor: '#fff',
+  },
+  shareableUrlText: {
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  shareableUrl: {
+    color: 'blue',
   },
   modalView: {
     flex: 1,

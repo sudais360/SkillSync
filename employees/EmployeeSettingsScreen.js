@@ -15,6 +15,7 @@ const EmployeeSettingsScreen = ({ route }) => {
     currentJobTitle: '',
     skills: '',
     experience: '',
+    location: '',
   });
 
   useEffect(() => {
@@ -110,53 +111,83 @@ const EmployeeSettingsScreen = ({ route }) => {
       <TouchableOpacity onPress={pickAndUploadDocument} style={styles.button}>
         <Text style={styles.buttonText}>Select and Upload Resume</Text>
       </TouchableOpacity>
-      {resume && <Text>{resume.name}</Text>}
+      {resume && <Text style={styles.resumeText}>{resume.name}</Text>}
       <TouchableOpacity onPress={extractResumeData} style={styles.button}>
         <Text style={styles.buttonText}>Extract Resume Data</Text>
       </TouchableOpacity>
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={formData.name}
-        onChangeText={(value) => handleInputChange('name', value)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={formData.email}
-        onChangeText={(value) => handleInputChange('email', value)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Phone"
-        value={formData.phone}
-        onChangeText={(value) => handleInputChange('phone', value)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Address"
-        value={formData.address}
-        onChangeText={(value) => handleInputChange('address', value)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Current Job Title"
-        value={formData.currentJobTitle}
-        onChangeText={(value) => handleInputChange('currentJobTitle', value)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Skills"
-        value={formData.skills}
-        onChangeText={(value) => handleInputChange('skills', value)}
-      />
-      <TextInput
-        style={[styles.input, { height: 100 }]}
-        placeholder="Experience"
-        value={formData.experience}
-        onChangeText={(value) => handleInputChange('experience', value)}
-        multiline
-      />
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Name:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Name"
+          value={formData.name}
+          onChangeText={(value) => handleInputChange('name', value)}
+        />
+      </View>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Email:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={formData.email}
+          onChangeText={(value) => handleInputChange('email', value)}
+        />
+      </View>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Phone:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Phone"
+          value={formData.phone}
+          onChangeText={(value) => handleInputChange('phone', value)}
+        />
+      </View>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Address:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Address"
+          value={formData.address}
+          onChangeText={(value) => handleInputChange('address', value)}
+        />
+      </View>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Current Job Title:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Current Job Title"
+          value={formData.currentJobTitle}
+          onChangeText={(value) => handleInputChange('currentJobTitle', value)}
+        />
+      </View>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Skills:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Skills"
+          value={formData.skills}
+          onChangeText={(value) => handleInputChange('skills', value)}
+        />
+      </View>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Experience:</Text>
+        <TextInput
+          style={[styles.input, { height: 100 }]}
+          placeholder="Experience"
+          value={formData.experience}
+          onChangeText={(value) => handleInputChange('experience', value)}
+          multiline
+        />
+      </View>
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Location:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Location"
+          value={formData.location}
+          onChangeText={(value) => handleInputChange('location', value)}
+        />
+      </View>
       <Button title="Save Settings" onPress={saveSettings} />
     </ScrollView>
   );
@@ -168,26 +199,39 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
   },
   button: {
     backgroundColor: 'tomato',
-    padding: 10,
+    padding: 15,
     marginVertical: 10,
     borderRadius: 5,
     alignItems: 'center',
   },
   buttonText: {
     color: '#fff',
+    fontSize: 16,
+  },
+  resumeText: {
+    fontSize: 16,
+    marginVertical: 10,
+  },
+  inputGroup: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
-    marginBottom: 10,
+    fontSize: 16,
   },
 });
 

@@ -1,20 +1,33 @@
 import React, { useEffect } from 'react';
-import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, StyleSheet, Button, Alert } from 'react-native';
 import { API_BASE_URL } from '../config';
 
-const EmployeeJobDetailsScreen = ({ route, navigation }) => {
-  const { jobDetails, employeeId } = route.params;
+const SharedJobDetailsScreen = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { job_id, employee_id } = route.params; // Ensure these are passed correctly
+
+  const [jobDetails, setJobDetails] = React.useState(null);
 
   useEffect(() => {
-    console.log("Employee ID:", employeeId);
-    console.log("Job Details:", jobDetails);
-  }, [employeeId, jobDetails]);
+    const fetchJobDetails = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/job_details?job_id=${job_id}`);
+        setJobDetails(response.data);
+      } catch (error) {
+        console.error('Error fetching job details:', error);
+        Alert.alert('Failed to fetch job details. Please try again.');
+      }
+    };
+
+    fetchJobDetails();
+  }, [job_id]);
 
   const handleApply = async () => {
     try {
-      if (!employeeId) {
+      if (!employee_id) {
         Alert.alert("Error", "Employee ID is missing.");
         return;
       }
@@ -29,7 +42,7 @@ const EmployeeJobDetailsScreen = ({ route, navigation }) => {
       }
 
       const applicationData = {
-        applicant_id: employeeId, 
+        applicant_id: employee_id, // Ensure the key matches what the backend expects
         job_id: jobDetails.JobID,
       };
       const response = await axios.post(`${API_BASE_URL}/apply`, applicationData);
@@ -46,38 +59,24 @@ const EmployeeJobDetailsScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleSave = async () => {
-    try {
-      const savedJobs = await AsyncStorage.getItem('savedJobs');
-      const parsedJobs = savedJobs ? JSON.parse(savedJobs) : [];
-      
-      // Check if the job is already saved
-      const jobExists = parsedJobs.some(job => job.JobID === jobDetails.JobID);
-      if (jobExists) {
-        Alert.alert('Job already saved!');
-        return;
-      }
-
-      parsedJobs.push(jobDetails);
-      await AsyncStorage.setItem('savedJobs', JSON.stringify(parsedJobs));
-      Alert.alert('Job saved successfully!');
-    } catch (error) {
-      console.error('Error saving job:', error);
-      Alert.alert('Failed to save job. Please try again.');
-    }
-  };
+  if (!jobDetails) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Job Details</Text>
-      <Text>Company Name: {jobDetails.CompanyName || 'N/A'}</Text>
-      <Text>Title: {jobDetails.Title || 'N/A'}</Text>
-      <Text>Salary: {jobDetails.Salary || 'N/A'}</Text>
-      <Text>Scope: {jobDetails.Scope || 'N/A'}</Text>
-      <Text>Expectations: {jobDetails.Description || 'N/A'}</Text>
+      <Text>Company Name: {jobDetails.CompanyName}</Text>
+      <Text>Title: {jobDetails.Title}</Text>
+      <Text>Salary: {jobDetails.Salary}</Text>
+      <Text>Scope: {jobDetails.Scope}</Text>
+      <Text>Expectations: {jobDetails.Description}</Text>
       <View style={styles.buttonContainer}>
         <Button title="Apply" onPress={handleApply} />
-        <Button title="Save" onPress={handleSave} />
       </View>
     </View>
   );
@@ -100,4 +99,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EmployeeJobDetailsScreen;
+export default SharedJobDetailsScreen;

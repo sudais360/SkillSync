@@ -23,6 +23,8 @@ import traceback
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+API_BASE_URL =  'http://192.168.68.107:5000'; 
+
 model_path = os.path.join(os.path.dirname(__file__), "custom_ner_model")
 nlp = spacy.load(model_path)
 print(f"Loaded model from {model_path}")
@@ -475,6 +477,7 @@ def parse_text_with_ner(text):
 def update_employee_settings():
     try:
         data = request.json
+        print('Received data:', data)  # Add this print to check received data
         user_id = data.get('user_id')
         name = data.get('name')
         email = data.get('email')
@@ -483,13 +486,16 @@ def update_employee_settings():
         current_job_title = data.get('currentJobTitle')
         skills = data.get('skills')
         experience = data.get('experience')
+        location = data.get('location')
+        
+        print('Location:', location)  # Add this print to check location value
 
         cursor = db.conn.cursor()
         cursor.execute("""
             UPDATE employees
-            SET Name = ?, Email = ?, Phone = ?, Address = ?, CurrentJobTitle = ?, Skills = ?, Experience = ?
+            SET Name = ?, Email = ?, Phone = ?, Address = ?, CurrentJobTitle = ?, Skills = ?, Experience = ?, Location = ?
             WHERE EmployeeID = ?
-        """, (name, email, phone, address, current_job_title, skills, experience, user_id))
+        """, (name, email, phone, address, current_job_title, skills, experience, location, user_id))
         db.conn.commit()
         cursor.close()
 
@@ -497,6 +503,7 @@ def update_employee_settings():
     except Exception as e:
         print(f"Error updating employee settings: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+
 
 ################################## get_employee_data ######################
 @app.route('/get_employee_data', methods=['GET'])
@@ -507,10 +514,10 @@ def get_employee_data():
             return jsonify({"message": "User ID not provided"}), 400
 
         cursor = db.conn.cursor()
-        cursor.execute("SELECT Name, Email, Phone, Address, CurrentJobTitle, Skills, Experience FROM employees WHERE EmployeeID = ?", (user_id,))
+        cursor.execute("SELECT Name, Email, Phone, Address, CurrentJobTitle, Skills, Experience, Location FROM employees WHERE EmployeeID = ?", (user_id,))
         result = cursor.fetchone()
         cursor.close()
-        
+
         if result:
             employee_data = {
                 "name": result[0],
@@ -519,14 +526,19 @@ def get_employee_data():
                 "address": result[3],
                 "currentJobTitle": result[4],
                 "skills": result[5],
-                "experience": result[6]
+                "experience": result[6],
+                "location": result[7]
             }
+            print('Fetched employee data:', employee_data)  # Ensure this prints correctly
             return jsonify(employee_data), 200
         else:
             return jsonify({"message": "Employee not found"}), 404
     except Exception as e:
         print(f"Error fetching employee data: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+
+
+
     
  ################################## apply_for_job ######################   
 @app.route('/apply', methods=['POST'])
@@ -1559,8 +1571,78 @@ def suggest_employees():
     except Exception as e:
         logging.error(f"Error suggesting employees: {e}", exc_info=True)
         return jsonify({"message": "Internal Server Error", "error": str(e)}), 500
+    
 
 
+##################################################update_employer_settings #################################################
+@app.route('/get_employer_data', methods=['GET'])
+def get_employer_data():
+    try:
+        employer_id = request.args.get('employer_id')
+        cursor = db.conn.cursor()
+        cursor.execute("SELECT Name, Email, Phone, CompanyName, CompanyAddress FROM employers WHERE EmployerID = ?", (employer_id,))
+        employer = cursor.fetchone()
+        cursor.close()
+        
+        if employer:
+            return jsonify({
+                "name": employer[0],
+                "email": employer[1],
+                "phone": employer[2],
+                "companyName": employer[3],
+                "companyAddress": employer[4]
+            }), 200
+        else:
+            return jsonify({"message": "Employer not found"}), 404
+    except Exception as e:
+        print(f"Error fetching employer data: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+    ##################################################update_employer_settings #################################################
+@app.route('/update_employer_settings', methods=['POST'])
+def update_employer_settings():
+    try:
+        data = request.json
+        employer_id = data.get('employer_id')
+        name = data.get('name')
+        email = data.get('email')
+        phone = data.get('phone')
+        company_name = data.get('companyName')
+        company_address = data.get('companyAddress')
 
+        cursor = db.conn.cursor()
+        cursor.execute("""
+            UPDATE employers
+            SET Name = ?, Email = ?, Phone = ?, CompanyName = ?, CompanyAddress = ?
+            WHERE EmployerID = ?
+        """, (name, email, phone, company_name, company_address, employer_id))
+        db.conn.commit()
+        cursor.close()
+
+        return jsonify({"message": "Employer settings updated successfully"}), 200
+    except Exception as e:
+        print(f"Error updating employer settings: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+    
+    ##################################################ugenerate_shareable_url' #################################################
+@app.route('/generate_shareable_url', methods=['POST'])
+def generate_shareable_url():
+    try:
+        data = request.json
+        job_id = data.get('job_id')
+        employee_id = data.get('employee_id')
+
+        if not job_id or not employee_id:
+            return jsonify({"message": "Job ID and Employee ID are required"}), 400
+
+        # Create a shareable URL
+        shareable_url = f"http://http://192.168.68.107:5000/shared_job?job_id={job_id}&employee_id={employee_id}"
+        
+        return jsonify({"shareable_url": shareable_url}), 200
+    except Exception as e:
+        print(f"Error generating shareable URL: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+
+#################################################################################################
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
