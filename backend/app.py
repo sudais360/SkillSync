@@ -20,10 +20,13 @@ import spacy
 import logging
 import traceback
 
+import smtplib
+from email.mime.text import MIMEText
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-API_BASE_URL =  'http://192.168.68.107:5000'; 
+API_BASE_URL =  'http://192.168.1.17:5000'; 
 
 model_path = os.path.join(os.path.dirname(__file__), "custom_ner_model")
 nlp = spacy.load(model_path)
@@ -541,17 +544,31 @@ def get_employee_data():
 
     
  ################################## apply_for_job ######################   
+from datetime import datetime
+
 @app.route('/apply', methods=['POST'])
 def apply_for_job():
     try:
+        # Fetch JSON data from request
         data = request.json
-        employee_id = data.get('applicant_id')  # Ensure the key matches the frontend
+        employee_id = data.get('applicant_id')
         job_id = data.get('job_id')
-        application_date = datetime.now()  # Get the current date and time
+        application_date = data.get('application_date')  # Try to get application date from request
+
+        # If application_date is not provided, set it to the current date and time
+        if not application_date:
+            application_date = datetime.now()
+        else:
+            application_date = datetime.fromisoformat(application_date)
+
+        # Debugging log statements
+        print(f"Received data: {data}")
+        print(f"Employee ID: {employee_id}, Job ID: {job_id}, Application Date: {application_date}")
 
         if not all([employee_id, job_id]):
             return jsonify({"message": "Missing required fields."}), 400
 
+        # Database insertion
         cursor = db.conn.cursor()
         cursor.execute("""
             INSERT INTO Applications (EmployeeID, JobID, ApplicationDate, Status)
@@ -561,9 +578,79 @@ def apply_for_job():
         cursor.close()
 
         return jsonify({"message": "Application successful"}), 201
+
     except Exception as e:
-        print(f"Error applying for job: {e}")
-        return jsonify({"message": "Internal Server Error"}), 500
+        print(f"Error applying for job: {e}")  # Log the error for debugging
+        return jsonify({"message": "Internal Server Error", "error": str(e)}), 500
+
+
+ ################################## update_applicant_status ######################   
+
+@app.route('/applicants/<int:applicant_id>/status', methods=['PUT'])
+def update_applicant_status(applicant_id):
+    try:
+        status = request.json.get('status')
+        if status not in ['Accepted', 'Rejected']:
+            return jsonify({"message": "Invalid status"}), 400
+
+        # Example database update (ensure this matches your actual database schema)
+        cursor = db.conn.cursor()
+        cursor.execute("""
+            UPDATE Applications SET Status = ? WHERE ApplicationID = ?
+        """, (status, applicant_id))
+        db.conn.commit()
+        cursor.close()
+
+        # Send notification email to the applicant
+        send_notification_email(applicant_id, status)
+
+        return jsonify({"message": "Status updated successfully"}), 200
+
+    except Exception as e:
+        print(f"Error updating applicant status: {e}")
+        return jsonify({"message": "Internal Server Error", "error": str(e)}), 500
+
+def send_notification_email(applicant_id, status):
+    # Example email sending logic (customize with your email configuration)
+    cursor = db.conn.cursor()
+    cursor.execute("SELECT Email, SkillsRequired FROM Applications WHERE ApplicationID = ?", (applicant_id,))
+    applicant_data = cursor.fetchone()
+    cursor.close()
+
+    email_address = applicant_data[0]
+    skills_required = applicant_data[1]
+
+    if status == 'Accepted':
+        subject = "Congratulations! You've been accepted"
+        body = "We are pleased to inform you that you have been accepted for the job."
+    else:
+        missing_skills = "Example missing skills"  # Replace with actual logic to determine missing skills
+        subject = "Application Status: Rejected"
+        body = f"Unfortunately, your application was not successful. You are missing the following skills: {missing_skills}."
+
+    send_email(email_address, subject, body)
+
+def send_email(to_address, subject, body):
+    # Configure your SMTP server and credentials
+    smtp_server = "smtp.example.com"
+    smtp_port = 587
+    smtp_username = "your-email@example.com"
+    smtp_password = "your-email-password"
+
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = smtp_username
+    msg['To'] = to_address
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.sendmail(smtp_username, to_address, msg.as_string())
+        print("Email sent successfully!")
+    except Exception as e:
+        print(f"Error sending email: {e}")   
+
 
  ################################## applied_jobs ######################   
 @app.route('/applied_jobs', methods=['GET'])
@@ -1066,28 +1153,6 @@ def generate_sas_token(blob_name):
     )
     return sas_token
     
-################################## Get RESUME ######################
-# @app.route('/get_resume', methods=['GET'])
-# def get_resume():
-#     try:
-#         user_id = request.args.get('user_id')
-#         cursor = db.conn.cursor()
-#         cursor.execute("SELECT ResumePDF FROM employees WHERE EmployeeID = ?", (user_id,))
-#         result = cursor.fetchone()
-#         cursor.close()
-
-#         if result and result[0]:
-#             resume_pdf = result[0]
-#             response = make_response(resume_pdf)
-#             response.headers.set('Content-Type', 'application/pdf')
-#             response.headers.set('Content-Disposition', 'attachment', filename=f'resume_{user_id}.pdf')
-#             return response
-#         else:
-#             return jsonify({"message": "No resume found for user"}), 404
-#     except Exception as e:
-#         print(f"Error fetching resume: {e}")
-#         return jsonify({"message": "Internal Server Error"}), 500
-
 
     
 ################################## extract_resume_data ######################
@@ -1242,17 +1307,41 @@ def get_employee_data():
         return jsonify({"message": "Internal Server Error"}), 500
     
  ################################## apply_for_job ######################   
+from datetime import datetime
+from flask import Flask, request, jsonify
+
+
+
 @app.route('/apply', methods=['POST'])
 def apply_for_job():
     try:
+        # Get JSON data from the request
         data = request.json
-        employee_id = data.get('applicant_id')  # Ensure the key matches the frontend
+        employee_id = data.get('applicant_id')
         job_id = data.get('job_id')
-        application_date = datetime.now()  # Get the current date and time
+        application_date = data.get('application_date')  # Fetch application date from request
 
+        # Debugging logs
+        print(f"Received data: {data}")
+        print(f"Employee ID: {employee_id}, Job ID: {job_id}, Application Date (string): {application_date}")
+
+        # Convert the application_date from string to datetime object
+        if application_date:
+            try:
+                # This conversion assumes the ISO string format sent by the frontend
+                application_date = datetime.fromisoformat(application_date.replace("Z", "+00:00")) 
+                print(f"Converted Application Date (datetime): {application_date}")
+            except ValueError:
+                return jsonify({"message": "Invalid date format."}), 400
+        else:
+            application_date = datetime.now()  # Default to current date if not provided
+            print(f"Default Application Date (datetime): {application_date}")
+
+        # Check if required fields are present
         if not all([employee_id, job_id]):
             return jsonify({"message": "Missing required fields."}), 400
 
+        # Insert into database
         cursor = db.conn.cursor()
         cursor.execute("""
             INSERT INTO Applications (EmployeeID, JobID, ApplicationDate, Status)
@@ -1262,9 +1351,13 @@ def apply_for_job():
         cursor.close()
 
         return jsonify({"message": "Application successful"}), 201
+
     except Exception as e:
-        print(f"Error applying for job: {e}")
-        return jsonify({"message": "Internal Server Error"}), 500
+        print(f"Error applying for job: {e}")  # Log the error
+        return jsonify({"message": "Internal Server Error", "error": str(e)}), 500
+
+
+
 
  ################################## applied_jobs ######################   
 @app.route('/applied_jobs', methods=['GET'])
@@ -1307,47 +1400,6 @@ def calculate_skill_score(applicant_skills, job_skills):
     match_count = len(set(applicant_skills) & set(job_skills))
     return (match_count / len(job_skills)) * 100
 
-
-################################### Utility Functions  ###############################
-
-
-# def fetch_all_employees():
-#     cursor = db.conn.cursor()
-#     cursor.execute("SELECT EmployeeID, Name, Skills, Address FROM employees")
-#     employees = cursor.fetchall()
-#     cursor.close()
-#     return [{'EmployeeID': row.EmployeeID, 'Name': row.Name, 'Skills': row.Skills, 'Address': row.Address} for row in employees]
-
-# def fetch_all_job_postings():
-#     cursor = db.conn.cursor()
-#     cursor.execute("SELECT JobID, Title, SkillsRequired, Location, EmployerID FROM JobPostings")
-#     job_postings = cursor.fetchall()
-#     cursor.close()
-#     return [{'JobID': row.JobID, 'Title': row.Title, 'SkillsRequired': row.SkillsRequired, 'Location': row.Location, 'EmployerID': row.EmployerID} for row in job_postings]
-
-# def has_matching_skills(employee_skills, job_skills):
-#     employee_skills_set = set(map(str.strip, employee_skills.split(',')))
-#     job_skills_set = set(map(str.strip, job_skills.split(',')))
-#     return bool(employee_skills_set.intersection(job_skills_set))
-
-# def save_search_strategies(employee_strategies, employer_strategies):
-#     cursor = db.conn.cursor()
-#     employee_insert_query = """
-#     INSERT INTO SearchStrategies (UserID, JobTitle, Skills, Location, GeneratedAt)
-#     VALUES (?, ?, ?, ?, ?)
-#     """
-#     for strategy in employee_strategies:
-#         cursor.execute(employee_insert_query, (strategy['UserID'], strategy['JobTitle'], strategy['Skills'], strategy['Location'], strategy['GeneratedAt']))
-    
-#     employer_insert_query = """
-#     INSERT INTO SearchStrategies (UserID, JobTitle, Skills, Location, GeneratedAt)
-#     VALUES (?, ?, ?, ?, ?)
-#     """
-#     for strategy in employer_strategies:
-#         cursor.execute(employer_insert_query, (strategy['UserID'], strategy['JobTitle'], strategy['Skills'], strategy['Location'], strategy['GeneratedAt']))
-    
-#     db.conn.commit()
-#     cursor.close()
 
 ################################### update_keyword_frequency  ###############################
 # Global error handler to log and return detailed errors

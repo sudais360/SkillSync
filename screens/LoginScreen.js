@@ -3,29 +3,39 @@ import { View, TextInput, StyleSheet, Text, TouchableOpacity, Image, ScrollView,
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
+// Define the LoginScreen component
 const LoginScreen = ({ route, navigation }) => {
+  // Extract the 'role' parameter from the route params
   const { role } = route.params;
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
 
+  // Initialize state variables for email and password with preset values for demonstration
+  const [email, setEmail] = useState('Test@gmail.com');
+  const [password, setPassword] = useState('Test');
+
+  // Function to handle the login process
   const handleLogin = () => {
+    // Check if both email and password are provided
     if (!email || !password) {
       Alert.alert('Error', 'Please enter both email and password');
       return;
     }
 
+    // Make a POST request to the login API endpoint
     fetch(`${API_BASE_URL}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password, role }),
+      body: JSON.stringify({ email, password, role }), // Send email, password, and role in the request body
     })
     .then(response => response.json())
     .then(data => {
+      // Check the response from the server
       if (data.message === 'Invalid email or password') {
+        // Show an alert if the login credentials are incorrect
         Alert.alert('Error', data.message);
       } else {
+        // Navigate to different screens based on the user role
         if (role === 'employer') {
           navigation.navigate('EmployerStack', { employerId: data.user_id });
         } else {
@@ -34,15 +44,18 @@ const LoginScreen = ({ route, navigation }) => {
       }
     })
     .catch(error => {
+      // Log the error and show an alert in case of a network failure
       console.error('Error:', error);
       Alert.alert('Error', 'Network request failed');
     });
   };
 
+  // Function to navigate to the Signup screen
   const handleSignUp = () => {
     navigation.navigate('Signup', { role });
   };
 
+  // Render the LoginScreen component
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.bannerText}>Welcome to SkillSync</Text>
@@ -73,6 +86,7 @@ const LoginScreen = ({ route, navigation }) => {
   );
 };
 
+// Define styles for the component
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,

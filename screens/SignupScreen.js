@@ -1,49 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, StyleSheet, Text, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from '../config'; // Import the API base URL from the config file
 
+
+// SignupScreen Component
 const SignupScreen = ({ navigation, route }) => {
   const { role } = route.params; // Get the role parameter from the navigation route
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [name, setName] = useState(''); // State for the user's name
+  const [email, setEmail] = useState(''); // State for the user's email
+  const [password, setPassword] = useState(''); // State for the user's password
 
-  useEffect(() => {
-    if (!role) {
-      console.error('Role parameter is missing.');
-      // Handle the error, for example, by navigating to a default screen
-      navigation.navigate('RoleSelection'); // Adjust the route name as per your setup
-    }
-  }, [role]);
+// useEffect hook to check if the role parameter is provided
+useEffect(() => {
+  if (!role) {
+    console.error('Role parameter is missing.'); // Log an error if the role is missing
+    // Handle the error, for example, by navigating to a default screen
+    navigation.navigate('RoleSelection'); // Adjust the route name as per your setup
+  }
+}, [role]);
 
-  const handleSignup = () => {
-    // Include role in the signup data
-    fetch(`${API_BASE_URL}/signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name,
-        email,
-        password,
-        role, // Include the role in the signup data
-      }),
+// Function to handle signup
+const handleSignup = () => {
+  // Include role in the signup data
+  fetch(`${API_BASE_URL}/signup`, { // Send a POST request to the signup endpoint
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json', // Set the content type to JSON
+    },
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+      role, // Include the role in the signup data
+    }),
+  })
+    .then(response => response.json()) // Convert the response to JSON
+    .then(data => {
+      if (data.message === "User created successfully") { // Check if the signup was successful
+        navigation.navigate('Login', { role }); // Navigate to the Login screen with the role parameter
+      } else {
+        throw new Error(data.message || 'Failed to sign up'); // Throw an error if signup failed
+      }
     })
-      .then(response => response.json())
-      .then(data => {
-        if (data.message === "User created successfully") {
-          navigation.navigate('Login', { role });
-        } else {
-          throw new Error(data.message || 'Failed to sign up');
-        }
-      })
-      .catch(error => {
-        console.error('Error signing up:', error);
-        Alert.alert('Error', error.message);
-      });
-  };
+    .catch(error => {
+      console.error('Error signing up:', error); // Log the error
+      Alert.alert('Error', error.message); // Show an alert with the error message
+    });
+};
 
+// Render UI
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.bannerText}>Welcome to SkillSync</Text>
@@ -77,6 +82,8 @@ const SignupScreen = ({ navigation, route }) => {
   );
 };
 
+
+// Styles for the component
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,

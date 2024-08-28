@@ -18,8 +18,7 @@ const EmployeeJobDetailsScreen = ({ route, navigation }) => {
         Alert.alert("Error", "Employee ID is missing.");
         return;
       }
-
-      // Check if the job is already applied
+  
       const appliedJobs = await AsyncStorage.getItem('appliedJobs');
       const parsedAppliedJobs = appliedJobs ? JSON.parse(appliedJobs) : [];
       const jobExists = parsedAppliedJobs.some(job => job.JobID === jobDetails.JobID);
@@ -27,17 +26,17 @@ const EmployeeJobDetailsScreen = ({ route, navigation }) => {
         Alert.alert('Job already applied!');
         return;
       }
-
+  
       const applicationData = {
         applicant_id: employeeId, 
         job_id: jobDetails.JobID,
+        application_date: new Date().toISOString() // Send the current date
       };
       const response = await axios.post(`${API_BASE_URL}/apply`, applicationData);
-
-      // Save to local storage
+  
       parsedAppliedJobs.push(jobDetails);
       await AsyncStorage.setItem('appliedJobs', JSON.stringify(parsedAppliedJobs));
-
+  
       Alert.alert('Application submitted successfully!');
       navigation.goBack();
     } catch (error) {
@@ -45,7 +44,8 @@ const EmployeeJobDetailsScreen = ({ route, navigation }) => {
       Alert.alert('Failed to apply for job. Please try again.');
     }
   };
-
+  
+  
   const handleSave = async () => {
     try {
       const savedJobs = await AsyncStorage.getItem('savedJobs');

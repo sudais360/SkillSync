@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Button, Alert } from 'react-native';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
@@ -27,12 +27,32 @@ const JobApplicantsScreen = ({ route, navigation }) => {
     navigation.navigate('ApplicantDetails', { applicant });
   };
 
+  const updateApplicantStatus = async (applicantId, status) => {
+    try {
+      await axios.put(`${API_BASE_URL}/applicants/${applicantId}/status`, { status });
+      setApplicants((prevApplicants) =>
+        prevApplicants.map((applicant) =>
+          applicant.id === applicantId ? { ...applicant, status } : applicant
+        )
+      );
+      Alert.alert('Success', `Applicant status updated to ${status}.`);
+    } catch (error) {
+      console.error('Error updating applicant status:', error);
+      Alert.alert('Error', 'Failed to update applicant status. Please try again.');
+    }
+  };
+
   const renderApplicant = ({ item }) => (
-    <TouchableOpacity onPress={() => handlePressApplicant(item)} style={styles.applicantCard}>
+    <View style={styles.applicantCard}>
       <Text>Name: {item.name}</Text>
       <Text>Phone: {item.phone}</Text>
       <Text>Score: {Math.round(item.score).toString()}</Text>
-    </TouchableOpacity>
+      <Text>Status: {item.status || 'Pending'}</Text>
+      <View style={styles.buttonContainer}>
+        <Button title="Accept" onPress={() => updateApplicantStatus(item.id, 'Accepted')} />
+        <Button title="Reject" onPress={() => updateApplicantStatus(item.id, 'Rejected')} />
+      </View>
+    </View>
   );
 
   if (error) {
@@ -49,7 +69,7 @@ const JobApplicantsScreen = ({ route, navigation }) => {
       <Text style={styles.title}>Applicants</Text>
       <FlatList
         data={applicants}
-        keyExtractor={(item) => item.id.toString()} // Ensure each key is unique
+        keyExtractor={(item) => item.id.toString()}
         renderItem={renderApplicant}
       />
     </View>
@@ -78,6 +98,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
   },
   errorText: {
     color: 'red',

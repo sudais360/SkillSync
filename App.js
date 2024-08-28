@@ -15,9 +15,11 @@ const App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="RoleSelection">
+        {/* Define screens in the stack navigator */}
         <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
+         {/* Hides the header for stack navigators managed internally */}
         <Stack.Screen name="EmployerStack" component={EmployerStack} options={{ headerShown: false }} />
         <Stack.Screen name="EmployeeStack" component={EmployeeStack} options={{ headerShown: false }} />
       </Stack.Navigator>

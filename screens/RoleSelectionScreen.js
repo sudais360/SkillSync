@@ -1,22 +1,30 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
 
+// RoleSelectionScreen Component
 const RoleSelectionScreen = ({ navigation }) => {
-  console.log("Navigating to RoleSelectionScreen"); // Example log statement
 
+  // Function to navigate to the Login screen with the selected role
   const navigateToLogin = (role) => {
-    console.log("Navigating to Login screen with role:", role);
-    navigation.navigate('Login', { role });
+    navigation.navigate('Login', { role });  // Navigate to the Login screen, passing the role parameter
   };
 
+  // Render UI
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.cutoutContainer}>
+        {/* Ensure the image path is correct */}
         <Image source={require('../Images/Logo/skillSyncLogo.png')} style={styles.logo} />
+        
+        {/* Correctly render all text within <Text> components */}
         <Text style={styles.title}>Select Your Role</Text>
+        
+        {/* Button for selecting 'employee' role */}
         <TouchableOpacity style={styles.button} onPress={() => navigateToLogin('employee')}>
           <Text style={styles.buttonText}>Sign up/Login as Employee</Text>
         </TouchableOpacity>
+        
+        {/* Button for selecting 'employer' role */}
         <TouchableOpacity style={styles.button} onPress={() => navigateToLogin('employer')}>
           <Text style={styles.buttonText}>Sign up/Login as Employer</Text>
         </TouchableOpacity>
@@ -25,6 +33,7 @@ const RoleSelectionScreen = ({ navigation }) => {
   );
 };
 
+// Styles for the component
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,

@@ -112,7 +112,6 @@ const EmployerJobPostingScreen = ({ route, navigation }) => {
             selectText="Select skills"
             searchInputPlaceholderText="Search skills..."
             onChangeInput={(text) => console.log(text)}
-            altFontFamily="ProximaNova-Light"
             tagRemoveIconColor="#CCC"
             tagBorderColor="#CCC"
             tagTextColor="#CCC"
