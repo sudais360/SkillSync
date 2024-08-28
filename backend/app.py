@@ -659,7 +659,7 @@ def get_applied_jobs():
         employee_id = request.args.get('employee_id')
         cursor = db.conn.cursor()
         cursor.execute("""
-            SELECT jp.JobID, jp.Title, e.Name as CompanyName, a.Status
+            SELECT jp.JobID, jp.Title, e.CompanyName as CompanyName, a.Status
             FROM Applications a
             JOIN JobPostings jp ON a.JobID = jp.JobID
             JOIN employers e ON jp.EmployerID = e.EmployerID
@@ -1366,7 +1366,7 @@ def get_applied_jobs():
         employee_id = request.args.get('employee_id')
         cursor = db.conn.cursor()
         cursor.execute("""
-            SELECT jp.JobID, jp.Title, e.Name as CompanyName, a.Status
+            SELECT jp.JobID, jp.Title, e.CompanyName as CompanyName, a.Status
             FROM Applications a
             JOIN JobPostings jp ON a.JobID = jp.JobID
             JOIN employers e ON jp.EmployerID = e.EmployerID

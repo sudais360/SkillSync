@@ -12,6 +12,7 @@ const EmployeeAppliedJobsScreen = ({ navigation }) => {
       if (employeeId) {
         try {
           const response = await axios.get(`${API_BASE_URL}/applied_jobs`, { params: { employee_id: employeeId } });
+          console.log('API Response:', response.data); // Log the API response for debugging
           setAppliedJobs(response.data);
         } catch (error) {
           console.error('Error fetching applied jobs:', error);
