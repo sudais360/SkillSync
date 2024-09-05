@@ -10,12 +10,42 @@ const Stack = createNativeStackNavigator();
 
 function JobDetailsNavigator() {
   return (
-    <Stack.Navigator initialRouteName="EmployerDashboard">
-      <Stack.Screen name="EmployerDashboard" component={EmployerDashboardScreen} />
-      <Stack.Screen name="JobDetails" component={JobDetailsScreen} />
-      <Stack.Screen name="JobApplicants" component={JobApplicantsScreen} />
-      <Stack.Screen name="ApplicantDetails" component={ApplicantDetailsScreen} />
-      <Stack.Screen name="SharedJobDetails" component={SharedJobDetailsScreen} />
+    <Stack.Navigator
+      initialRouteName="EmployerDashboard"
+      screenOptions={{
+        headerTitleStyle: { fontWeight: 'bold' },
+      }}
+    >
+      <Stack.Screen
+        name="EmployerDashboard"
+        component={EmployerDashboardScreen}
+        options={{ title: 'Dashboard' }}
+      />
+      <Stack.Screen
+        name="JobDetails"
+        component={JobDetailsScreen}
+        options={({ route }) => ({
+          title: `Job Details: ${route.params?.jobTitle || 'Job'}`, // Customize based on job title
+        })}
+      />
+      <Stack.Screen
+        name="JobApplicants"
+        component={JobApplicantsScreen}
+        options={({ route }) => ({
+          title: `Applicants for: ${route.params?.jobTitle || 'Job'}`, // Display job title in the header
+        })}
+      />
+      <Stack.Screen
+        name="ApplicantDetails"
+        component={ApplicantDetailsScreen}
+        options={{ title: 'Applicant Details' }}
+      />
+
+      <Stack.Screen
+        name="SharedJobDetails"
+        component={SharedJobDetailsScreen}
+        options={{ title: 'Shared Job Details' }}
+      />
     </Stack.Navigator>
   );
 }

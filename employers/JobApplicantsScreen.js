@@ -24,6 +24,7 @@ const JobApplicantsScreen = ({ route, navigation }) => {
   }, [jobId]);
 
   const handlePressApplicant = (applicant) => {
+    // Navigating to the ApplicantDetails screen and passing the applicant data
     navigation.navigate('ApplicantDetails', { applicant });
   };
 
@@ -43,7 +44,7 @@ const JobApplicantsScreen = ({ route, navigation }) => {
   };
 
   const renderApplicant = ({ item }) => (
-    <View style={styles.applicantCard}>
+    <TouchableOpacity onPress={() => handlePressApplicant(item)} style={styles.applicantCard}>
       <Text>Name: {item.name}</Text>
       <Text>Phone: {item.phone}</Text>
       <Text>Score: {Math.round(item.score).toString()}</Text>
@@ -52,7 +53,7 @@ const JobApplicantsScreen = ({ route, navigation }) => {
         <Button title="Accept" onPress={() => updateApplicantStatus(item.id, 'Accepted')} />
         <Button title="Reject" onPress={() => updateApplicantStatus(item.id, 'Rejected')} />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   if (error) {

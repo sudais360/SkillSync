@@ -73,8 +73,9 @@ const EmployeeJobDetailsScreen = ({ route, navigation }) => {
       <Text>Company Name: {jobDetails.CompanyName || 'N/A'}</Text>
       <Text>Title: {jobDetails.Title || 'N/A'}</Text>
       <Text>Salary: {jobDetails.Salary || 'N/A'}</Text>
-      <Text>Scope: {jobDetails.Scope || 'N/A'}</Text>
       <Text>Expectations: {jobDetails.Description || 'N/A'}</Text>
+      <Text>Required Skills: {jobDetails.SkillsRequired || 'N/A'}</Text>
+      <Text>Relevance Score: {jobDetails.RelevanceScore ? `${jobDetails.RelevanceScore.toFixed(2)}%` : 'N/A'}</Text> 
       <View style={styles.buttonContainer}>
         <Button title="Apply" onPress={handleApply} />
         <Button title="Save" onPress={handleSave} />

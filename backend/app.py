@@ -570,11 +570,13 @@ def apply_for_job():
 
         # Database insertion
         cursor = db.conn.cursor()
+        # Inside apply_for_job function
         cursor.execute("""
             INSERT INTO Applications (EmployeeID, JobID, ApplicationDate, Status)
             VALUES (?, ?, ?, ?)
         """, (employee_id, job_id, application_date, "applied"))
         db.conn.commit()
+
         cursor.close()
 
         return jsonify({"message": "Application successful"}), 201
@@ -1307,10 +1309,6 @@ def get_employee_data():
         return jsonify({"message": "Internal Server Error"}), 500
     
  ################################## apply_for_job ######################   
-from datetime import datetime
-from flask import Flask, request, jsonify
-
-
 
 @app.route('/apply', methods=['POST'])
 def apply_for_job():
@@ -1341,20 +1339,39 @@ def apply_for_job():
         if not all([employee_id, job_id]):
             return jsonify({"message": "Missing required fields."}), 400
 
-        # Insert into database
+        # Check if an application already exists for this employee and job
         cursor = db.conn.cursor()
         cursor.execute("""
-            INSERT INTO Applications (EmployeeID, JobID, ApplicationDate, Status)
-            VALUES (?, ?, ?, ?)
-        """, (employee_id, job_id, application_date, "applied"))
+            SELECT ApplicationID FROM Applications 
+            WHERE EmployeeID = ? AND JobID = ?
+        """, (employee_id, job_id))
+        existing_application = cursor.fetchone()
+
+        if existing_application:
+            # If the application exists, update the application date and status
+            cursor.execute("""
+                UPDATE Applications 
+                SET ApplicationDate = ?, Status = ? 
+                WHERE ApplicationID = ?
+            """, (application_date, "applied", existing_application[0]))
+            print(f"Application updated for EmployeeID {employee_id} and JobID {job_id}")
+        else:
+            # Insert a new application record if it doesn't exist
+            cursor.execute("""
+                INSERT INTO Applications (EmployeeID, JobID, ApplicationDate, Status)
+                VALUES (?, ?, ?, ?)
+            """, (employee_id, job_id, application_date, "applied"))
+            print(f"New application created for EmployeeID {employee_id} and JobID {job_id}")
+
         db.conn.commit()
         cursor.close()
 
-        return jsonify({"message": "Application successful"}), 201
+        return jsonify({"message": "Application processed successfully"}), 201
 
     except Exception as e:
         print(f"Error applying for job: {e}")  # Log the error
         return jsonify({"message": "Internal Server Error", "error": str(e)}), 500
+
 
 
 
